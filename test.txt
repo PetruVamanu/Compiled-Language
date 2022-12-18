@@ -7,7 +7,17 @@ array int[24] miarraiint=   {1,2,3,
 
 4};
 
+function boolean myFunc(){}
+function real myFunc2(boolean x23, int y1, real abcd){}
 
+
+class myClass {
+    int a,v,c;
+    boolean w,q, s;
+    function int ClassFunction(boolean xwazW, int adddm, real q){};
+    const real cevaaaa = 0.3123;
+    array int[24] cevaaray=   {1,2,3,4};
+}
 
 begin
 end
