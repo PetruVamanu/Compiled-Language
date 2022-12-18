@@ -1,11 +1,18 @@
 %{
     #include <stdio.h>
-    #include "comp.tab.h"
+    #include "c.tab.h"
 %}
 %option noyywrap
 %%
+"const" {return CONST;}
+"array" {return ARRAY;}
 "int" {return INT;}
+"const" {return CONST;}
+"real" {return FLOAT;}
+"boolean" {return BOOL;}
 "string" {return STRING;}
+"true" {return BTRUE;}
+"false" {return BFALSE;}
 "while" {return WHILE;}
 "if" {return IF;}
 "else" {return ELSE;}

@@ -1,0 +1,13 @@
+const int x2  ;
+real aX9;
+boolean myBoolean = true;
+const real idgaf = 9.99;
+array const real[24] miarrai, ceva = {true, false, 1, 0.9};
+array int[24] miarraiint=   {1,2,3,
+
+4};
+
+
+
+begin
+end
