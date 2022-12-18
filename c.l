@@ -8,6 +8,8 @@
 "array" {return ARRAY;}
 "int" {return INT;}
 "const" {return CONST;}
+"function" {return FUNCTION;}
+"class" {return CLASS;}
 "real" {return FLOAT;}
 "boolean" {return BOOL;}
 "string" {return STRING;}
@@ -17,6 +19,7 @@
 "if" {return IF;}
 "else" {return ELSE;}
 "begin" {return BEGINP;}
+"void" {return VOID;}
 "end" {return ENDP;}
 [a-zA-Z][a-zA-Z0-9]* {return ID;}
 0|[1-9][0-9]* {return C_INT;}

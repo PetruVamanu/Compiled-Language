@@ -9,7 +9,7 @@
 %}
 %start s
 
-%token INT CONST FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE ID C_INT C_FLOAT C_STRING BEGINP ENDP CONST ARRAY
+%token INT CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE ID C_INT C_FLOAT C_STRING BEGINP ENDP CONST ARRAY
 %%
 s : declaratii main{ printf("cod sintactic corect! ;) \n"); }
   ;
@@ -31,14 +31,38 @@ primitive_type : INT
                | BOOL
                ;
 
+return_type : primitive_type  
+            | VOID
+            ;
+            // to add return of arrays
+
+func_decl : FUNCTION return_type ID '(' param_list ')' '{' '}'
+          ;
+          //to add block of instructions
+
+param_list : args
+           |
+           ;
+
+args : primitive_type ID
+     | primitive_type ID ',' args
+     ;
+
 is_const : CONST
          |
          ;
 
 declarare : var_decl ';'
-        //   | func_decl ';'
-        //   | class_decl ';'
+          | func_decl
+          | class_decl
           ;
+
+class_decl : CLASS ID '{' class_content '}'
+           ;
+
+class_content : var_decl ';' class_content
+              | func_decl ';' class_content
+              |
 
 var_decl : type var_list
          | ARRAY type '[' C_INT ']' array_list
