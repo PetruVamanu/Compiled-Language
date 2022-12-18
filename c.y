@@ -29,6 +29,7 @@ type : is_const primitive_type
 primitive_type : INT
                | FLOAT
                | BOOL
+               | STRING
                ;
 
 return_type : primitive_type  
@@ -87,6 +88,7 @@ var_list : variable
 value : C_INT
       | C_FLOAT
       | C_BOOL
+      | C_STRING
       ;
 
 variable : ID
