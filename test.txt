@@ -1,5 +1,6 @@
 const int x2  ;
 real aX9;
+string prenume;
 boolean myBoolean = true;
 const real idgaf = 9.99;
 array const real[24] miarrai, ceva = {true, false, 1, 0.9};
@@ -14,6 +15,7 @@ function real myFunc2(boolean x23, int y1, real abcd){}
 class myClass {
     int a,v,c;
     boolean w,q, s;
+    string nume, mesaj = "cmf pisy?" ;
     function int ClassFunction(boolean xwazW, int adddm, real q){};
     const real cevaaaa = 0.3123;
     array int[24] cevaaray=   {1,2,3,4};
