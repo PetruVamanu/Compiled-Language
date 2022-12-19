@@ -1,12 +1,10 @@
-const int x2  ;
+const int x2 = (3-2*(4-2)||y) ;
 real aX9;
-string prenume;
+string prenume=x2;
 boolean myBoolean = true;
 const real idgaf = 9.99;
 array const real[24] miarrai, ceva = {true, false, 1, 0.9};
-array int[24] miarraiint=   {1,2,3,
-
-4};
+array int[24] miarraiint=   {1,2,3,4};
 
 function boolean myFunc(){}
 function real myFunc2(boolean x23, int y1, real abcd){}
@@ -22,4 +20,28 @@ class myClass {
 }
 
 begin
+    a=2;
+    int b = 3, f=1;
+    for(a=2; a < 2; a=a+1) { 
+        int c=3;
+        int f=2;
+        for(int b=1; b <= 2; b=b+1) {
+            int t=5;
+        }
+    }
+    while(a-2 > 0) {
+        int vv=5;
+    }
+    
+    if(a>1) {
+        while((a-2)) {
+            for(int i = 1; i <= a; i = (i+1)/(a*12/46)) {
+                b = b - 1;
+            }
+            a = a - 1;
+        }
+    } else {
+        hh = 1;
+    }
+
 end
