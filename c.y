@@ -10,18 +10,16 @@
 %start s
 
 %token INT CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE ID C_INT C_FLOAT C_STRING BEGINP ENDP CONST ARRAY
+EQ NEQ LEQ GEQ OR AND FOR LT GT 
 %%
-s : declaratii main{ printf("cod sintactic corect! ;) \n"); }
+
+s : declaratii main { printf("cod sintactic corect! ;) \n"); }
   ;
 
 declaratii : declaratii declarare
            | declarare
            | 
            ;
-
-C_BOOL : BFALSE
-       | BTRUE
-       ;
 
 type : is_const primitive_type
      ;
@@ -53,7 +51,7 @@ is_const : CONST
          |
          ;
 
-declarare : var_decl ';'
+declarare : var_decl 
           | func_decl
           | class_decl
           ;
@@ -61,12 +59,13 @@ declarare : var_decl ';'
 class_decl : CLASS ID '{' class_content '}'
            ;
 
-class_content : var_decl ';' class_content
+class_content : var_decl class_content
               | func_decl ';' class_content
               |
+              ;
 
-var_decl : type var_list
-         | ARRAY type '[' C_INT ']' array_list
+var_decl : type var_list ';'
+         | ARRAY type '[' C_INT ']' array_list ';'
          ;
 
 array_list : array_var
@@ -77,34 +76,88 @@ array_var : ID
           | ID '=' '{' array_content '}'
           ;
 
-array_content : value
-              | value ',' array_content
+array_content : atomic_value
+              | atomic_value ',' array_content
               ;
 
 var_list : variable 
          | variable ',' var_list
          ;
 
-value : C_INT
-      | C_FLOAT
-      | C_BOOL
-      | C_STRING
-      ;
-
 variable : ID
-         | ID '=' value
-         
-
-int_list : C_INT
-         | C_INT ',' int_list
+         | var_assignment
          ;
 
+atomic_value : C_INT
+             | C_FLOAT
+             | BFALSE 
+             | BTRUE
+             | C_STRING
+             | ID 
+             ;
 
-main : BEGINP program
+expression_value : atomic_value 
+                 | expression_value operator expression_value
+                 | '(' expression_value operator expression_value ')'
+                 ;
+
+operator : '+'
+         | '-'
+         | '*'
+         | '/'
+         | EQ 
+         | NEQ 
+         | LEQ
+         | GEQ 
+         | OR 
+         | AND 
+         | LT 
+         | GT 
+         ;
+
+var_assignment : ID '=' expression_value
+                      ;
+
+main : BEGINP scope_body ENDP 
      ;
 
-program : ENDP
-       ;
+scope_body : var_decl scope_body
+           /* | function_call scope_body */
+           | var_assignment ';' scope_body
+           | repetitive_loop scope_body
+           | if_statement scope_body
+           | 
+           ;
+
+/* function_call :   */
+
+repetitive_loop : for_loop 
+                | while_loop
+                ;
+
+for_loop : FOR '(' for_init ';' for_condition ';' for_step ')' '{' scope_body '}'
+         ;
+
+for_init : primitive_type var_list
+         | expression_value 
+         | var_assignment 
+         |
+         ;
+
+for_condition : expression_value
+              | 
+              ;
+
+for_step : var_assignment
+         | 
+         ;
+
+while_loop : WHILE '(' expression_value ')' '{' scope_body '}'
+           ;
+
+if_statement : IF '(' expression_value ')' '{' scope_body '}' 
+             | IF '(' expression_value ')' '{' scope_body '}' ELSE '{' scope_body '}' 
+             ;
 %%
 
 void yyerror(char * s){
