@@ -22,8 +22,8 @@
 "else" {return ELSE;}
 "begin" {return BEGINP;}
 "void" {return VOID;}
+"return" {return RET;}
 "end" {return ENDP;}
-
 "==" {return EQ;}
 "!=" {return NEQ;}
 "<=" {return LEQ;}
@@ -32,6 +32,8 @@
 ">=" {return GEQ;}
 "||" {return OR;}
 "&&" {return AND;}
+"Eval" {return EVAL;}
+"TypeOf" {return TYPEOF;}
 
 [a-zA-Z][a-zA-Z0-9]* {return ID;}
 0|[1-9][0-9]* {return C_INT;}

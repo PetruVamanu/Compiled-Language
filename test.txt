@@ -2,35 +2,68 @@ const int x2 = (3-2*(4-2)||y) ;
 real aX9;
 string prenume=x2;
 boolean myBoolean = true;
+
 const real idgaf = 9.99;
 array const real[24] miarrai, ceva = {true, false, 1, 0.9};
-array int[24] miarraiint=   {1,2,3,4};
+array int[24] miarraiint = {1,2,3,4};
 
 function boolean myFunc(){}
-function real myFunc2(boolean x23, int y1, real abcd){}
+
+function real myFunc2(boolean x23, int y1, real abcd){
+    for(int i = 1; i <= n; i = i + 1) {
+        x23 = y1;
+    }
+    return 23;
+}
 
 
 class myClass {
+
     int a,v,c;
     boolean w,q, s;
     string nume, mesaj = "cmf pisy?" ;
-    function int ClassFunction(boolean xwazW, int adddm, real q){};
-    const real cevaaaa = 0.3123;
-    array int[24] cevaaray=   {1,2,3,4};
+    function int ClassFunction(boolean xwazW, int adddm, real q){
+        return xwazw + addm;
+    };
+    const real cevaa = 0.3123;
+    array int[24] cevaray = {1,2,3,4};
+
 }
 
 begin
+
+    GGG = GGG + 5 * 3 + TEST ( TEST(2,3+x,4) + 45, 2+x, 3 ) - 34 - 4 + tvect[2];
+    if (x + 23 < 5 || y < 45 + TEST(2,3,4) && (x + 5 < 56 || x == 2)) {
+        a = 3;
+    }
+
+    varType = TypeOf(GGG);
+    Eval(x + 23 - 5);
+
     a=2;
+    myClass.a = 23;
+    myClass.ClassFunction(12, 43, 21.2);
+
     int b = 3, f=1;
+    
+    for(int i = 0; i < 1005; i = i + 1) {
+        miarrai[i] = i + 1;
+    }
+
     for(a=2; a < 2; a=a+1) { 
         int c=3;
         int f=2;
+
         for(int b=1; b <= 2; b=b+1) {
             int t=5;
         }
+
     }
+
     while(a-2 > 0) {
         int vv=5;
+        myFunc2(true, 1, 2.5);
+        int var = myFunc2(true, 1, 2.5) + 2 * myFunc2(false, 0.5, 222.2);
     }
     
     if(a>1) {
@@ -45,3 +78,5 @@ begin
     }
 
 end
+
+
