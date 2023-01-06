@@ -2,15 +2,137 @@
     #include <stdio.h>
     #include <string.h>
     #include <math.h>
+    #include <stdlib.h>
 
     extern FILE* yyin;
     extern char* yytext;
     extern int yylineno; 
+
+    #define MAX_VAR_LEN 32
+    #define MAX_SCOPE_LEN 1024
+    #define MAX_ARRAY_LEN 128
+    #define MAX_VAR_NUM 128
+    #define MAX_FUNC_NUM 128
+
+    typedef struct {
+      short typeName;
+      // 0 - int, 1 - boolean, 2 - real, 3 - string 
+      short isConst;
+      // isConst = 0 if variabile is not constant, 1 otherwise
+      short isArray;
+      // isArray = 0 if variable is not an array, 1 otherwise 
+      short isInit[MAX_ARRAY_LEN];
+      // isInit[i] - if the ith component of the array is initialized. 
+      // if isArray = 0 -> check isInit[0] to check if the whole variable is initialized 
+      short arrayLen;
+      // if isArray = 0 -> arrayLen will always be 1 (convention)
+    } 
+    Type;
+
+    typedef struct {
+      Type typeInfo;
+      char name[MAX_VAR_LEN];
+      char scope[MAX_SCOPE_LEN];
+      int line;
+      // scope will be of the following form: 
+      // only an / means global  
+      // /~ means inside main,
+      // '/for' or '/while' means inside a for/while   
+      // /f_funcName - means inside the funcName function
+      // /objName - means a class  
+      // /&objName.method - means inside a method of an object
+      // Example of scopes : '/~/for/while/for' OR '/~/printAns' OR /~/&myClass OR /~/&myClass.printAns
+    }
+    Variable;
+
+    typedef struct {
+      Variable *variables;
+      int varNumber;
+    }
+    VariableList;
+
+    typedef struct {
+      VariableList parameters;
+      char name[MAX_VAR_LEN];
+      short returnType;
+      int line;
+    } 
+    Function;
+
+    typedef struct {
+      Function *functions;
+      int funcNumber;
+    } 
+    FunctionList;
+
+    VariableList allVariables;
+    Variable currentVariable;
+    char currentScope[MAX_SCOPE_LEN];
+
+    void init_varList(VariableList *varTable) 
+    {
+      varTable->variables = (Variable *) malloc(MAX_VAR_NUM * sizeof(Variable));
+      varTable->varNumber = 0;
+    }
+
+    void init_funcList(FunctionList *funcs) 
+    {
+      funcs->functions = (Function *) malloc(MAX_FUNC_NUM * sizeof(Function));
+      funcs->funcNumber = 0;
+    } 
+
+    void insert_var(VariableList *varTable, Variable *newVar)
+    {
+      int varNum = varTable->varNumber;
+
+      if(varNum >= MAX_VAR_NUM) {
+        printf("Variable number limit is excedeed!");
+        exit(1);
+      }
+      
+      strncpy(varTable->variables[varNum].name, newVar->name, MAX_VAR_LEN);
+      strncpy(varTable->variables[varNum].scope, newVar->scope, MAX_SCOPE_LEN);
+      
+      varTable->variables[varNum].line = newVar->line;
+      varTable->variables[varNum].typeInfo.typeName = newVar->typeInfo.typeName;
+      varTable->variables[varNum].typeInfo.isConst = newVar->typeInfo.isConst;
+      varTable->variables[varNum].typeInfo.isArray = newVar->typeInfo.isArray;
+
+      int arrayLen = newVar->typeInfo.arrayLen;
+
+      if(arrayLen >= MAX_ARRAY_LEN) {
+        printf("Array length limit is excedeed!");
+        exit(1);
+      }
+
+      varTable->variables[varNum].typeInfo.arrayLen = arrayLen;
+
+      for(int i = 0; i < arrayLen; ++i) {
+        varTable->variables[varNum].typeInfo.isInit[i] = newVar->typeInfo.isInit[i];
+      } 
+      
+      varNum++;
+      varTable->varNumber = varNum;
+    }
+    
+    void clear_varList(VariableList *varTable) 
+    {
+        free(varTable->variables);
+        varTable->varNumber = 0;
+    }
 %}
+
+%union 
+{
+    int intval;
+    char* strval;
+}
+
 %start s
 
-%token INT CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE ID C_INT C_FLOAT C_STRING BEGINP ENDP CONST ARRAY
-EQ NEQ LEQ GEQ OR AND FOR LT GT RET TYPEOF EVAL 
+%token INT CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE <strval>ID C_INT C_FLOAT C_STRING BEGINP ENDP CONST ARRAY
+EQ NEQ LEQ GEQ OR AND FOR LT GT RET TYPEOF EVAL
+
 %%
 
 s : declaratii main { printf("cod sintactic corect! ;) \n"); }
@@ -24,10 +146,18 @@ declaratii : declaratii declarare
 type : is_const primitive_type
      ;
 
-primitive_type : INT
-               | FLOAT
-               | BOOL
-               | STRING
+primitive_type : INT {
+                  currentVariable.typeInfo.typeName = 0;
+               }
+               | FLOAT {
+                  currentVariable.typeInfo.typeName = 2;
+               }
+               | BOOL {
+                  currentVariable.typeInfo.typeName = 1;
+               }
+               | STRING {
+                  currentVariable.typeInfo.typeName = 3;
+               }
                ;
 
 return_type : primitive_type  
@@ -47,8 +177,12 @@ args : primitive_type ID
      | primitive_type ID ',' args
      ;
 
-is_const : CONST
-         |
+is_const : CONST {
+            currentVariable.typeInfo.isConst = 1;
+         }
+         | {
+            currentVariable.typeInfo.isConst = 0;
+         }
          ;
 
 declarare : var_decl 
@@ -83,11 +217,22 @@ array_content : atomic_value
               | atomic_value ',' array_content
               ;
 
-var_list : variable 
-         | variable ',' var_list
+var_list : variable {
+            insert_var(&allVariables, &currentVariable);
+         }
+         | variable {
+            insert_var(&allVariables, &currentVariable);
+         } ',' var_list
          ;
 
-variable : ID
+variable : ID {
+            currentVariable.typeInfo.isArray = 0;
+            currentVariable.typeInfo.arrayLen = 1;
+            currentVariable.typeInfo.isInit[0] = 0;
+            currentVariable.line = yylineno;
+            strncpy(currentVariable.name, $1, MAX_VAR_LEN);
+            strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+         }
          | var_assignment
          ;
 
@@ -124,7 +269,14 @@ operator : '+'
          | GT 
          ;
 
-var_assignment : ID '=' expression_value 
+var_assignment : ID {
+                  currentVariable.typeInfo.isArray = 0;
+                  currentVariable.typeInfo.arrayLen = 1;
+                  currentVariable.typeInfo.isInit[0] = 1;
+                  currentVariable.line = yylineno;
+                  strncpy(currentVariable.name, $1, MAX_VAR_LEN);
+                  strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+               } '=' expression_value 
                ;
 
 class_assignment : ID '.' ID '=' expression_value
@@ -196,6 +348,17 @@ void yyerror(char * s){
 }
 
 int main(int argc, char** argv){
-  yyin=fopen(argv[1],"r");
+  yyin = fopen(argv[1],"r");
+
+  init_varList(&allVariables);
+  strncpy(currentScope, "/", MAX_SCOPE_LEN);
+
   yyparse();
+
+  for(int i = 0; i < allVariables.varNumber; ++i) {
+    printf("%s %d %d\n", allVariables.variables[i].name, allVariables.variables[i].typeInfo.isArray, allVariables.variables[i].typeInfo.isInit[0]);
+  }
+
+  clear_varList(&allVariables);
+
 } 
