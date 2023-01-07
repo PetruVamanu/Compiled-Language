@@ -1,0 +1,39 @@
+The following variables where declared in the program:
+1. Name: y, State: Mutable, Structure: Simple, Type: real, Line: 1, Scope: /
+2. Name: x2, State: Constant, Structure: Simple, Type: int, Line: 2, Scope: /
+3. Name: aX9, State: Mutable, Structure: Simple, Type: real, Line: 3, Scope: /
+4. Name: prenume, State: Mutable, Structure: Simple, Type: string, Line: 4, Scope: /
+5. Name: myBoolean, State: Mutable, Structure: Simple, Type: boolean, Line: 5, Scope: /
+6. Name: ch, State: Mutable, Structure: Simple, Type: char, Line: 6, Scope: /
+7. Name: idgaf, State: Constant, Structure: Simple, Type: real, Line: 7, Scope: /
+8. Name: miarrai, State: Constant, Structure: Array of 24 elements, Type: real, Line: 8, Scope: /
+9. Name: ceva, State: Constant, Structure: Array of 24 elements, Type: real, Line: 8, Scope: /
+10. Name: miarraiint, State: Mutable, Structure: Array of 24 elements, Type: int, Line: 9, Scope: /
+11. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 14, Scope: /myFunc2/for_1/
+12. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 23, Scope: /&myClass/
+13. Name: v, State: Mutable, Structure: Simple, Type: int, Line: 23, Scope: /&myClass/
+14. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 23, Scope: /&myClass/
+15. Name: w, State: Mutable, Structure: Simple, Type: boolean, Line: 25, Scope: /&myClass/
+16. Name: q, State: Mutable, Structure: Simple, Type: boolean, Line: 25, Scope: /&myClass/
+17. Name: s, State: Mutable, Structure: Simple, Type: boolean, Line: 25, Scope: /&myClass/
+18. Name: nume, State: Mutable, Structure: Simple, Type: string, Line: 26, Scope: /&myClass/
+19. Name: mesaj, State: Mutable, Structure: Simple, Type: string, Line: 26, Scope: /&myClass/
+20. Name: motherfucker, State: Mutable, Structure: Simple, Type: real, Line: 28, Scope: /&myClass/ClassFunction/
+21. Name: cevaa, State: Constant, Structure: Simple, Type: real, Line: 31, Scope: /&myClass/
+22. Name: cevaray, State: Mutable, Structure: Array of 24 elements, Type: int, Line: 32, Scope: /&myClass/
+23. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 38, Scope: /~/
+24. Name: b, State: Mutable, Structure: Simple, Type: int, Line: 51, Scope: /~/
+25. Name: f, State: Mutable, Structure: Simple, Type: int, Line: 51, Scope: /~/
+26. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 53, Scope: /~/
+27. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 55, Scope: /~/for_2/
+28. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 57, Scope: /~/for_2/
+29. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 60, Scope: /~/for_3/
+30. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 61, Scope: /~/for_3/
+31. Name: f, State: Mutable, Structure: Simple, Type: int, Line: 62, Scope: /~/for_3/
+32. Name: b, State: Mutable, Structure: Simple, Type: int, Line: 63, Scope: /~/for_3/for_4/
+33. Name: t, State: Mutable, Structure: Simple, Type: int, Line: 64, Scope: /~/for_3/for_4/
+34. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 69, Scope: /~/
+35. Name: vv, State: Mutable, Structure: Simple, Type: int, Line: 71, Scope: /~/while_1/
+36. Name: var, State: Mutable, Structure: Simple, Type: int, Line: 73, Scope: /~/while_1/
+37. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 78, Scope: /~/if_2/while_2/for_5/
+38. Name: petri, State: Mutable, Structure: Simple, Type: int, Line: 84, Scope: /~/else_1/

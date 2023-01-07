@@ -14,6 +14,7 @@
 "real" {return FLOAT;}
 "boolean" {return BOOL;}
 "string" {return STRING;}
+"char" {return CHAR;}
 "true" {return BTRUE;}
 "false" {return BFALSE;}
 "for" {return FOR;}
@@ -35,10 +36,19 @@
 "Eval" {return EVAL;}
 "TypeOf" {return TYPEOF;}
 
-[a-zA-Z][a-zA-Z0-9]* {yylval.strval=strdup(yytext); return ID;}
-0|[1-9][0-9]* {return C_INT;}
+[a-zA-Z][a-zA-Z0-9]* {
+    yylval.strval = strdup(yytext); 
+    return ID;
+}
+
+0|[1-9][0-9]* {
+    yylval.intval = atoi(yytext); 
+    return C_INT; 
+}
+
 (0|[1-9][0-9]*)\.[0-9]+ {return C_FLOAT;}
 \"[?!,.;" "a-zA-Z]*\" {return C_STRING;}
+\'[?!,.;" "a-zA-Z]\' {return C_CHAR;}
 [ \t] ;
 \n {yylineno++;}
 \r ;
