@@ -25,14 +25,38 @@
 "void" {return VOID;}
 "return" {return RET;}
 "end" {return ENDP;}
-"==" {return EQ;}
-"!=" {return NEQ;}
-"<=" {return LEQ;}
-"<" {return LT;}
-">" {return GT;}
-">=" {return GEQ;}
-"||" {return OR;}
-"&&" {return AND;}
+"==" {
+    yylval.strval = strdup(yytext); 
+    return EQ;
+}
+"!=" {
+    yylval.strval = strdup(yytext);
+    return NEQ;
+}
+"<=" {
+    yylval.strval = strdup(yytext);
+    return LEQ;
+}
+"<" {
+    yylval.strval = strdup(yytext);
+    return LT;
+}
+">" {
+    yylval.strval = strdup(yytext);
+    return GT;
+}
+">=" {
+    yylval.strval = strdup(yytext);
+    return GEQ;
+}
+"||" {
+    yylval.strval = strdup(yytext);
+    return OR;
+}
+"&&" {
+    yylval.strval = strdup(yytext);
+    return AND;
+}
 "Eval" {return EVAL;}
 "TypeOf" {return TYPEOF;}
 
@@ -47,8 +71,14 @@
 }
 
 (0|[1-9][0-9]*)\.[0-9]+ {return C_FLOAT;}
-\"[?!,.;" "a-zA-Z]*\" {return C_STRING;}
-\'[?!,.;" "a-zA-Z]\' {return C_CHAR;}
+\"[?!,.;" "a-zA-Z]*\" {
+    yylval.strval = strdup(yytext); 
+    return C_STRING;
+}
+\'[?!,.;" "a-zA-Z]\' {
+    yylval.strval = strdup(yytext); 
+    return C_CHAR;
+}
 [ \t] ;
 \n {yylineno++;}
 \r ;

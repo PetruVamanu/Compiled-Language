@@ -1,11 +1,5 @@
 The following functions where defined in the program:
-1) Name: myFunc, Return Type: boolean, Scope: /, Line: 11, Parameters: 
-2) Name: myFunc2, Return Type: real, Scope: /, Line: 13, Parameters: 
-    2.1) Name: x23, State: Mutable, Structure: Simple, Type: boolean
-    2.2) Name: y1, State: Mutable, Structure: Simple, Type: int
-    2.3) Name: arraiParam, State: Mutable, Structure: Array of 69 elements, Type: real
-    2.4) Name: abcd, State: Mutable, Structure: Simple, Type: real
-3) Name: ClassFunction, Return Type: int, Scope: /&myClass/, Line: 27, Parameters: 
-    3.1) Name: xwazW, State: Mutable, Structure: Simple, Type: boolean
-    3.2) Name: adddm, State: Mutable, Structure: Simple, Type: int
-    3.3) Name: q, State: Mutable, Structure: Simple, Type: real
+1) Name: f, Return Type: int, Scope: /, Line: 1, Parameters: 
+    1.1) Name: a, State: Mutable, Structure: Simple, Type: int
+    1.2) Name: b, State: Mutable, Structure: Simple, Type: int
+    1.3) Name: c, State: Mutable, Structure: Simple, Type: int

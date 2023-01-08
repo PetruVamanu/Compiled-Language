@@ -71,15 +71,69 @@
       int funcNumber;
     } 
     FunctionList;
+    
+    struct AstNode {
+      short nodeType;
+      // nodeType = 0 -> OP, nodeType = 1 -> ID, nodeType = 2 -> NUM, type = 3 -> OTHER 
+      short dataType;
+      // dataType = 0 -> int, dataType = 1 -> boolean, dataType = 2 -> real dataType = 3 -> char, dataType = 4 -> string 
+      // dataType = 5 -> void, dataType = 6 -> nodeType is operation
+      char value[MAX_VAR_LEN];
+
+      struct AstNode* left;
+      struct AstNode* right;  
+    };
+
+    struct NodeInfo {
+      short nodeType;
+      short dataType;
+      char value[MAX_VAR_LEN];
+    };
+
+    struct AstNode *init_Ast(short _nodeType, short _dataType, char *_value) 
+    {
+      struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));
+      Ast->left = Ast->right = NULL;
+      Ast->nodeType = _nodeType;
+      Ast->dataType = _dataType;
+      strncpy(Ast->value, _value, MAX_VAR_LEN);
+      return Ast;
+    }
+
+    struct AstNode *build_Ast(char *_value, struct AstNode *_left, struct AstNode *_right, int _nodeType) 
+    {
+      struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));
+      Ast->left = _left;
+      Ast->right = _right;
+      Ast->nodeType = _nodeType;
+      Ast->dataType = 6;
+      strncpy(Ast->value, _value, MAX_VAR_LEN); 
+      return Ast; 
+    }
+
+    typedef struct {
+      char varName[MAX_VAR_LEN];
+      char scope[MAX_SCOPE_LEN];
+      struct AstNode *Ast;
+      int varType;
+    } AstList;
 
     VariableList allVariables;
     FunctionList allFunctions;
+    
+    AstList *allAssign;
+    int cntAssign;
 
     Variable currentVariable;
     Function currentFunction;
 
+    struct AstNode *currentAst;
+    struct AstNode *newRoot;
+
+    short nodeType, dataType, isFunction, badExpression;
+    char currentValue[MAX_VAR_LEN], currentOperation[MAX_VAR_LEN];
+    
     int forCounter = 0, whileCounter = 0, ifCounter = 0, elseCounter = 0;
-    short isFunction;
 
     char currentScope[MAX_SCOPE_LEN];
 
@@ -186,7 +240,8 @@
         }
     }
     
-    void create_symbol_table() {
+    void create_symbol_table() 
+    {
       FILE *F = fopen(symb_table_path, "w");
       if(!F) {
         fprintf(stderr, "Error at opening symbol_table_path!");
@@ -214,6 +269,7 @@
           fprintf(F, "Scope: %s\n", allVariables.variables[i].scope);
       }
     }
+
     void create_function_table() 
     {
       FILE *F = fopen(func_table_path, "w");
@@ -256,22 +312,22 @@
         //fprintf();
       }
     }
+
     short check_variable_already(VariableList *varTable, char *name, char *scope, int line) 
     {
       int varNum = varTable->varNumber;
       for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name)
-           && !strcmp(scope, varTable->variables[i].scope)) {
+        if(!strcmp(name, varTable->variables[i].name) && !strcmp(scope, varTable->variables[i].scope)) {
             printf("Variable %s is defined multiple times (line %d and line %d) in the same scope\n",
               name, varTable->variables[i].line, line
             );
-            return 1;
+            return -1;
         }
       }
       return 0;
     }
 
-    short check_prev_defined(VariableList *varTable, char *name, char *scope, int line) 
+    short check_var_defined(VariableList *varTable, char *name, char *scope, int line) 
     {
       int varNum = varTable->varNumber;
       for(int i = 0; i < varNum; ++i) {
@@ -281,22 +337,195 @@
         }
       }
       printf("Variable %s on line %d was not previously defined!\n", name, line);
-      return 1;
+      return -1;
     }
+
+    short extract_variable_type(VariableList *varTable, char *name, char *scope) 
+    {
+      int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
+      for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
+          int scopeLen = strlen(varTable->variables[i].scope);
+          if(deepestScope < scopeLen) {
+            deepestScope = scopeLen;
+            pos = i;
+          }
+        }
+      }
+      if(pos == -1) {
+        return -1;
+      }
+      return varTable->variables[pos].typeInfo.typeName;
+    }
+
+    short endWith(char *str, char *pat) 
+    {
+        int n = strlen(str);
+        int m = strlen(pat);
+        if(m > n) {
+          return 0;
+        }
+        return (strcmp(str + n - m, pat) == 0);
+    }
+
+    short check_class_var(VariableList *varTable, char *varName, char *objName, int line) 
+    {
+      // variable scope should end with &objName/
+      char pattern[MAX_VAR_LEN];
+      snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+      int varNum = varTable->varNumber;
+
+      for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
+          return 0;          
+        }
+      }
+
+      printf("The %s.%s field used on line %d wasn't previously defined!\n", varName, objName, line);
+      return -1;
+    }
+
+    short extract_class_varType(VariableList *varTable, char *varName, char *objName) 
+    {
+      char pattern[MAX_VAR_LEN];
+      snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+      int varNum = varTable->varNumber;
+
+      for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
+          return varTable->variables[i].typeInfo.typeName;          
+        }
+      }
+
+      return -1;
+    }
+
+    short check_array_defined(VariableList *varTable, char *name, char *scope, int index, int line)
+    {
+      int varNum = varTable->varNumber;
+      int arrayLen = -1;
+
+      for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
+            if(varTable->variables[i].typeInfo.isArray) {
+              arrayLen = varTable->variables[i].typeInfo.arrayLen;
+            }
+            break;
+        }
+      }
+      if(arrayLen == -1) {
+        printf("Array %s on line %d was not previously defined!\n", name, line);
+        return -1;
+      }
+      if(index < 0 || index >= arrayLen) {
+        printf("Index %d of array %s on line %d is out of bounds!\n", index, name, line);
+        return -1;
+      }
+      return 0;
+    }
+
+    short check_func_defined(FunctionList *funcTable, char *name, int line) 
+    {
+      // scope doesn't matter at simple functions
+      int funcNum = funcTable->funcNumber;
+      for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(name, funcTable->functions[i].name)) {
+          return 0;
+        }
+      }
+      printf("Function %s called on line %d is not defined!\n", name, line);
+      return -1;
+    }
+
+    short extract_func_return(FunctionList *funcTable, char *name) 
+    {
+      int funcNum = funcTable->funcNumber;
+      for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(name, funcTable->functions[i].name)) {
+          return funcTable->functions[i].returnType;
+        }
+      }
+      return -1;
+    }
+    
+    void dfs(struct AstNode* nod) {
+      if(!nod) {
+        printf("This motherfucker ripped me offf!\n");
+        return;
+      }
+      printf("Current node. Value: %s. NodeType: %d. DataType: %d\n", nod->value, nod->nodeType, nod->dataType);
+      if(nod->left) {
+        printf("Left son: %s\n", nod->left->value);
+        dfs(nod->left);
+      }
+      printf("Back at %s\n", nod->value);
+      if(nod->right) {
+        printf("Right son: %s\n", nod->right->value);
+        dfs(nod->right);
+      }
+    }
+
+    short check_var_parameter(FunctionList *funcTable, char *name, char *scope) 
+    {
+      int funcNum = funcTable->funcNumber;
+      for(int i = 0; i < funcNum; ++i) {
+        int parNum = funcTable->functions[i].parameters.varNumber;
+        for(int j = 0; j < parNum; ++j) {
+          if(!strcmp(funcTable->functions[i].parameters.variables[j].name, name)) {
+            if(strstr(scope, funcTable->functions[i].name)) {
+              // if the name of the function is contained in the variable scope -> variable might be a parameter
+              return 0;
+            }
+          }
+        }
+      }
+      return -1;
+    }
+
+    short extract_param_type(FunctionList *funcTable, char *name, char *scope) 
+    {
+      int funcNum = funcTable->funcNumber;
+      for(int i = 0; i < funcNum; ++i) {
+        int parNum = funcTable->functions[i].parameters.varNumber;
+        for(int j = 0; j < parNum; ++j) {
+          if(!strcmp(funcTable->functions[i].parameters.variables[j].name, name)) {
+            if(strstr(scope, funcTable->functions[i].name)) {
+              // if the name of the function is contained in the variable scope -> variable might be a parameter
+              return funcTable->functions[i].parameters.variables[j].typeInfo.typeName;
+            }
+          }
+        }
+      }
+      return -1;
+    }
+
 %}
 
 %union 
 {
     int intval;
     char* strval;
+    struct AstNode *astNode;
+    struct NodeInfo *nodeVal;
 }
 
 %start s
 
-%token INT CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE C_STRING BEGINP ENDP CONST
-EQ NEQ LEQ GEQ OR AND FOR LT GT RET TYPEOF EVAL CHAR C_CHAR
-<strval>ID 
-<intval>C_INT C_FLOAT ARRAY
+%token INT C_FLOAT ARRAY CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE BEGINP ENDP CONST FOR RET TYPEOF EVAL CHAR 
+<strval>ID EQ NEQ LEQ GEQ OR AND LT GT C_CHAR C_STRING 
+<intval>C_INT 
+
+%type<strval>operator
+%type<astNode>expression_value
+%type<nodeVal>atomic_value function_call 
+
+%left OR
+%left AND 
+%left EQ NEQ
+%left LT GT LEQ GEQ
+%left '+' '-' 
+%left '*' '/'
+%left '(' ')'
 
 %%
 
@@ -359,11 +588,14 @@ func_decl : FUNCTION {isFunction = 1;} return_type ID
             currentFunction.line = yylineno;
             isFunction = 0;
           } 
-          '(' param_list ')' '{' scope_body '}' 
+          '(' param_list ')' 
           {
-            remove_from_scope(); 
             insert_func(&allFunctions, &currentFunction);
             clear_varList(&currentFunction.parameters);
+          }
+          '{' scope_body '}' 
+          {
+            remove_from_scope(); 
           }
           ;
           
@@ -474,57 +706,215 @@ variable : ID {
             strncpy(currentVariable.name, $1, MAX_VAR_LEN);
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
          }
-         | var_assignment
+         | ID 
+         {
+            currentVariable.typeInfo.isInit[0] = 1;
+            currentVariable.line = yylineno;
+            strncpy(currentVariable.name, $1, MAX_VAR_LEN);
+            strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+          } 
+          '=' expression_value 
+          {
+            strncpy(allAssign[cntAssign].varName, $1, MAX_VAR_LEN);
+            strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
+            allAssign[cntAssign].varType = currentVariable.typeInfo.typeName;
+            allAssign[cntAssign].Ast = $4;
+            cntAssign++;
+          }
          ;
 
-atomic_value : C_INT
-             | C_FLOAT
-             | BFALSE 
-             | BTRUE
-             | C_CHAR
-             | C_STRING
-             | ID {
-                check_prev_defined(&`allVariables, $1, currentScope, yylineno);
+atomic_value : C_INT {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 2;
+                $$->dataType = 0;
+                snprintf($$->value, MAX_VAR_LEN, "%d", $1);
              }
-             | eval_call
-             | typeof_call
+             | C_FLOAT
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 3;
+                $$->dataType = 2;
+                snprintf($$->value, MAX_VAR_LEN, "%s", "float");
+             }
+             | BFALSE
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 3;
+                $$->dataType = 1;
+                snprintf($$->value, MAX_VAR_LEN, "%s", "false");
+             } 
+             | BTRUE
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 3;
+                $$->dataType = 1;
+                snprintf($$->value, MAX_VAR_LEN, "%s", "true");
+             }
+             | C_CHAR
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 3;
+                $$->dataType = 3;
+                snprintf($$->value, MAX_VAR_LEN, "%s", $1);
+             }
+             | C_STRING
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 3;
+                $$->dataType = 4;
+                snprintf($$->value, MAX_VAR_LEN, "%s", $1);
+             }
+             | ID 
+             {
+                int parameter = 1;
+                int ret = check_var_parameter(&allFunctions, $1, currentScope);
+                if(ret) {
+                  parameter = 0;
+                  ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                }
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = 1;
+                if(parameter) {
+                  $$->dataType = extract_param_type(&allFunctions, $1, currentScope);
+                }
+                else {
+                  $$->dataType = extract_variable_type(&allVariables, $1, currentScope);
+                }
+                snprintf($$->value, MAX_VAR_LEN, "%s", $1);
+             }
              | function_call
+             {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                $$->nodeType = $1->nodeType;
+                $$->dataType = $1->dataType;
+                snprintf($$->value, MAX_VAR_LEN, "%s", $1->value);
+             }
              | ID '.' ID 
-             | ID '[' expression_value ']'
+             {
+               check_class_var(&allVariables, $3, $1, yylineno);
+               $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+               $$->nodeType = 1;
+               $$->dataType = extract_class_varType(&allVariables, $3, $1);
+               snprintf($$->value, MAX_VAR_LEN, "%s.%s", $1, $3);
+             }
+             | ID '[' C_INT ']'
+             {
+               check_array_defined(&allVariables, $1, currentScope, $3, yylineno);
+               $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+               $$->nodeType = 1;
+               $$->dataType = extract_variable_type(&allVariables, $1, currentScope);
+               snprintf($$->value, MAX_VAR_LEN, "%s[%d]", $1, $3);
+             }
              | class_method_call
              ;
 
-expression_value : atomic_value 
-                 | expression_value operator expression_value
-                 | '(' expression_value operator expression_value ')'
+expression_value : 
+                 atomic_value {
+                    $$ = init_Ast($1->nodeType, $1->dataType, $1->value);
+                 }
+                 | 
+                 expression_value operator expression_value {
+                    $$ = build_Ast($2, $1, $3, 0);
+                    free($2);
+                 }  
+                 | '(' expression_value ')' {
+                    $$ = $2;
+                 }
                  ;
 
-operator : '+'
-         | '-'
-         | '*'
-         | '/'
-         | EQ 
-         | NEQ 
-         | LEQ
-         | GEQ 
-         | OR 
-         | AND 
-         | LT 
-         | GT 
+operator : '+' {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%c", '+');
+         }
+         | '-' {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%c", '-');
+         }
+         | '*' {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%c", '*');
+         }
+         | '/' {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%c", '/');
+         }
+         | EQ {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | NEQ {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | LEQ {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | GEQ {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | OR {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | AND {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | LT {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
+         | GT {
+            $$ = (char *) malloc(MAX_VAR_LEN);
+            snprintf($$, MAX_VAR_LEN, "%s", $1);
+         }
          ;
 
-var_assignment : ID {
-                  currentVariable.typeInfo.isInit[0] = 1;
-                  currentVariable.line = yylineno;
-                  strncpy(currentVariable.name, $1, MAX_VAR_LEN);
-                  strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
-               } '=' expression_value 
+var_assignment : ID '=' expression_value 
+               {
+                  int parameter = 1;
+                  int ret = check_var_parameter(&allFunctions, $1, currentScope);
+                  if(ret) {
+                    parameter = 0;
+                    ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                  }
+                  if(!ret) {
+                    strncpy(allAssign[cntAssign].varName, $1, MAX_VAR_LEN);
+                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
+                    if(parameter) {
+                      allAssign[cntAssign].varType = extract_param_type(&allFunctions, $1, currentScope);
+                    }
+                    else {
+                      allAssign[cntAssign].varType = extract_variable_type(&allVariables, $1, currentScope);
+                    }
+                    allAssign[cntAssign].Ast = $3;
+                    cntAssign++;
+                  }
+               }
                ;
 
-class_assignment : ID '.' ID '=' expression_value
+class_assignment : ID '.' ID '=' expression_value 
+                 {
+                    check_class_var(&allVariables, $3, $1, yylineno);
+                    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s.%s", $1, $3);
+                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
+                    allAssign[cntAssign].varType = extract_class_varType(&allVariables, $3, $1);
+                    allAssign[cntAssign].Ast = $5;
+                    cntAssign++;
+                 }
                  ;
 
-array_assignment : ID '[' expression_value ']' '=' expression_value
+array_assignment : ID '[' C_INT ']' '=' expression_value
+                 {
+                    check_array_defined(&allVariables, $1, currentScope, $3, yylineno);
+                    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s[%d]", $1, $3);
+                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
+                    allAssign[cntAssign].varType = extract_variable_type(&allVariables, $1, currentScope);
+                    allAssign[cntAssign].Ast = $6;
+                    cntAssign++;
+                 }
                  ;
 
 main : BEGINP {add_scope("~", 0);} scope_body ENDP {remove_from_scope();}
@@ -546,8 +936,15 @@ scope_body : var_decl scope_body
 
 func_arguments : expression_value
                | expression_value ',' func_arguments
-
-function_call :  ID '(' func_arguments ')'
+ 
+function_call : ID '(' func_arguments ')' 
+              {
+                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                check_func_defined(&allFunctions, $1, yylineno);
+                $$->nodeType = 3;
+                $$->dataType = extract_func_return(&allFunctions, $1);
+                snprintf($$->value, MAX_VAR_LEN, "func");
+              }
               ;
 
 typeof_call : TYPEOF '(' expression_value ')'
@@ -640,16 +1037,23 @@ int main(int argc, char** argv)
 
   init_varList(&allVariables);
   init_funcList(&allFunctions);
+  allAssign = (AstList *) malloc(MAX_VAR_NUM * sizeof(AstList));
 
   strncpy(currentScope, "/", MAX_SCOPE_LEN);
 
   yyparse();
+
+  /* for(int i = 0; i < cntAssign; ++i) {
+    printf("The variable %s on scope %s with type %d has the following AST: \n", allAssign[i].varName, allAssign[i].scope, allAssign[i].varType);
+    dfs(allAssign[i].Ast);
+  } */
 
   create_symbol_table();
   create_function_table();
 
   printf("The number of functions is %d: \n", allFunctions.funcNumber);
 
+  free(allAssign);
   clear_varList(&allVariables);
   clear_funcList(&allFunctions);
 } 
