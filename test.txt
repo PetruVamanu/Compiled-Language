@@ -1,4 +1,9 @@
 begin
-    int a;
-    a = 4 - 2 + 3;
+    array int[24] arr;
+    arr[0] = 1;
+    int a = 2 + arr[0];
+    int c = arr[0] + a;
+    arr[0] = arr[0] * 2;
+    array real[35] fac;
+    fac[2] = arr[0];
 end

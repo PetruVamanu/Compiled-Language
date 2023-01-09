@@ -1,2 +1,5 @@
 The following variables where declared in the program:
-1. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /~/
+1. Name: arr, State: Mutable, Structure: Array of 24 elements, Type: int, Line: 2, Scope: /~/
+2. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 4, Scope: /~/
+3. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 5, Scope: /~/
+4. Name: fac, State: Mutable, Structure: Array of 35 elements, Type: real, Line: 7, Scope: /~/

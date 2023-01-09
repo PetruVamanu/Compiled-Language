@@ -452,6 +452,9 @@ short check_AstTypes(struct AstNode *Ast, int line)
     
     for(int i = 0; i < astTypesLen; ++i) {
         short found = 0;
+        if(astTypes[i] == -1) {
+            return -1;
+        }
         for(int j = 0; j < precLen; ++j) {
             if(astTypes[i] == precTypes[j]) {
                 found = 1;
@@ -501,6 +504,7 @@ int extract_variable_value(VariableList *varTable, char *name, char *scope) {
 
 short extract_arrayElement_value(VariableList *varTable, char *name, int index, char *scope)
 {
+    printf("%s\n", name);
     int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope) && varTable->variables[i].typeInfo.isArray) {
@@ -533,6 +537,81 @@ short extract_classVar_value(VariableList *varTable, char *varName, char *objNam
     return 0;
 }
 
+void update_variable_value(VariableList *varTable, char *name, char *scope, int newVal) {
+    int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
+    for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
+            int scopeLen = strlen(varTable->variables[i].scope);
+            if(deepestScope < scopeLen) {
+                deepestScope = scopeLen;
+                pos = i;
+            }
+        }
+    }
+    if(pos == -1) {
+        // this shouldn't happen tho
+        return;
+    }
+    varTable->variables[pos].value[0] = newVal;
+}
+
+void update_arrayElement_value(VariableList *varTable, char *name, int index, char *scope, int newVal)
+{
+    int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
+    for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope) && varTable->variables[i].typeInfo.isArray) {
+            int scopeLen = strlen(varTable->variables[i].scope);
+            if(deepestScope < scopeLen) {
+                deepestScope = scopeLen;
+                pos = i;
+            }
+        }
+    }
+    if(pos == -1 && index >= varTable->variables[pos].typeInfo.arrayLen) {
+        // this shouldn't happen tho
+        return;
+    }
+    varTable->variables[pos].value[index] = newVal;
+}
+
+void update_classVar_value(VariableList *varTable, char *varName, char *objName, char *scope, int newVal) 
+{
+    char pattern[MAX_VAR_LEN];
+    snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+    int varNum = varTable->varNumber;
+
+    for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
+            varTable->variables[i].value[0] = newVal;          
+        }
+    }
+    // shouldn't happen tho
+    return;
+}
+
+
+void update_var(char *name, char *scope, int newVal) 
+{
+    short isArray = (strchr(name, '[') != 0);
+    short isObj = (strchr(name, '.') != 0);
+    if(!isArray && !isObj) {
+        update_variable_value(&allVariables, name, scope, newVal);
+    }
+    if(isArray) {
+        // I know fo sho it's an array
+        char arrName[MAX_VAR_LEN];
+        int index;
+        sscanf(name, "%[^[][%d]", arrName, &index);
+        update_arrayElement_value(&allVariables, arrName, index, scope, newVal);
+    }
+    if(isObj) {
+        // I know fo sho it's an object
+        char objName[MAX_VAR_LEN], varName[MAX_VAR_LEN];
+        sscanf(name, "%s.%s", objName, varName);
+        update_classVar_value(&allVariables, varName, objName, scope, newVal);
+    }
+}
+
 int computeAst(struct AstNode *nod, char *scope, int line)
 {
     if(!nod) {
@@ -547,16 +626,16 @@ int computeAst(struct AstNode *nod, char *scope, int line)
         }
         if(nod->nodeInfo.nodeType == 1 && !nod->nodeInfo.dataType) {
             // we are on a leag with an identifier, array element, or class element 
-            short isArray = (strchr(nod->nodeInfo.value, '[') != 0);
-            short isObj = (strchr(nod->nodeInfo.value, '.') != 0);
-            if(!isArray || !isObj) {
+            short isArray = (strchr(nod->nodeInfo.value, '[') != NULL);
+            short isObj = (strchr(nod->nodeInfo.value, '.') != NULL);
+            if(!isArray && !isObj) {
                 return extract_variable_value(&allVariables, nod->nodeInfo.value, scope);
             }
             if(isArray) {
                 // I know fo sho it's an array
                 char arrName[MAX_VAR_LEN];
                 int index;
-                sscanf(nod->nodeInfo.value, "%s[%d]", arrName, &index);
+                sscanf(nod->nodeInfo.value, "%[^[][%d]", arrName, &index);
                 return extract_arrayElement_value(&allVariables, arrName, index, scope);
             }
             if(isObj) {

@@ -27,7 +27,6 @@
 <strval>ID EQ NEQ LEQ GEQ OR AND LT GT C_CHAR C_STRING 
 <intval>C_INT 
 
-%type<strval>operator
 %type<astNode>expression_value
 %type<nodeVal>atomic_value function_call 
 
@@ -350,65 +349,57 @@ expression_value :
                     $$ = init_Ast($1->nodeType, $1->dataType, $1->value);
                  }
                  | 
-                 expression_value operator expression_value {
-                  //   printf("last operator %s\n", $2);
-                    $$ = build_Ast($2, $1, $3, 0);
-                    free($2);
+                 expression_value '+' expression_value {
+                    $$ = build_Ast("+", $1, $3, 0);
                  }  
+                 |
+                 expression_value '-' expression_value {
+                    $$ = build_Ast("-", $1, $3, 0);
+                 }  
+                 |
+                 expression_value '*' expression_value {
+                    $$ = build_Ast("*", $1, $3, 0);
+                 }  
+                 |
+                 expression_value '/' expression_value {
+                    $$ = build_Ast("/", $1, $3, 0);
+                 }  
+                 |
+                 expression_value EQ expression_value {
+                    $$ = build_Ast("==", $1, $3, 0);
+                 }  
+                 |
+                 expression_value NEQ expression_value {
+                    $$ = build_Ast("<>", $1, $3, 0);
+                 }  
+                 |
+                 expression_value LEQ expression_value {
+                    $$ = build_Ast("<=", $1, $3, 0);
+                 }  
+                 |
+                 expression_value GEQ expression_value {
+                    $$ = build_Ast(">=", $1, $3, 0);
+                 }  
+                 |
+                 expression_value OR expression_value {
+                    $$ = build_Ast("||", $1, $3, 0);
+                 }  
+                 |
+                 expression_value AND expression_value {
+                    $$ = build_Ast("&&", $1, $3, 0);
+                 }  
+                 |
+                 expression_value LT expression_value {
+                    $$ = build_Ast("<", $1, $3, 0);
+                 }  
+                 |
+                 expression_value GT expression_value {
+                    $$ = build_Ast(">", $1, $3, 0);
+                 }
                  | '(' expression_value ')' {
                     $$ = $2;
                  }
                  ;
-
-operator : '+' {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%c", '+');
-         }
-         | '-' {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%c", '-');
-         }
-         | '*' {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%c", '*');
-         }
-         | '/' {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%c", '/');
-         }
-         | EQ {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | NEQ {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | LEQ {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | GEQ {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | OR {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | AND {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | LT {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         | GT {
-            $$ = (char *) malloc(MAX_VAR_LEN);
-            snprintf($$, MAX_VAR_LEN, "%s", $1);
-         }
-         ;
 
 var_assignment : ID '=' expression_value 
                {
@@ -571,34 +562,19 @@ int main(int argc, char** argv)
   yyparse();
 
   for(int i = 0; i < cntAssign; ++i) {
-    printf("The variable %s on scope %s with type %d has the following AST: \n", allAssign[i].varName, allAssign[i].scope, allAssign[i].varType);
-    dfs(allAssign[i].Ast);
-    int expType = check_AstTypes(allAssign[i].Ast, allAssign[i].line);
-    if(expType == -1) {
-      continue;
-    }
-    if(allAssign[i].varType != expType) {
-      printf("The left side of the assignment on line %d has a different type than the right side!\n", allAssign[i].line);
-      printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[allAssign[i].varType], decodeType[expType]);
-      continue;
-    }
-
-    int astResult = computeAst(allAssign[i].Ast, allAssign[i].scope, allAssign[i].line);
-    printf("%d\n", astResult);
-    /* if(ambigExpr) {
-      printf("The expression from the right side on line %d is ambiguous. There are operands that have different types.\n", allAssign[i].Ast->line);
-      continue;
-    }
-
-    // expression was okay :)
-    short isArray = (strchr(allAssign[i].varName, '[') != NULL);  
-    short isObjVar = (strchtr(allAssign[i].varName, '.') != NULL);
-    
-    if(!isArray && !isObjVar) {
-      // normal variable 
-      //update_var_value(allAssign[i].varName, allAssign[i].scope, );
-    }  */
-    
+      printf("The variable %s on scope %s is assigned to the following value: \n", allAssign[i].varName, allAssign[i].scope);
+      int expType = check_AstTypes(allAssign[i].Ast, allAssign[i].line);
+      if(expType == -1) {
+         continue;
+      }
+      if(allAssign[i].varType != expType) {
+         printf("The left side of the assignment on line %d has a different type than the right side!\n", allAssign[i].line);
+         printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[allAssign[i].varType], decodeType[expType]);
+         continue;
+      }
+      int astResult = computeAst(allAssign[i].Ast, allAssign[i].scope, allAssign[i].line);
+      update_var(allAssign[i].varName, allAssign[i].scope, astResult);
+      printf("%d\n", astResult);
   }
 
   create_symbol_table();
