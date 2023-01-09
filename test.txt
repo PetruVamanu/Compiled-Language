@@ -1,8 +1,4 @@
-function int f(int a, int b, int c) {
-    a = b || c;
-    int iaibu = a+b+c-b-a;
-    b = a-2;
-}
 begin
-int a;
+    int a;
+    a = 4 - 2 + 3;
 end

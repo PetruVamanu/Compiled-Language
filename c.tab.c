@@ -72,504 +72,16 @@
     #include <string.h>
     #include <math.h>
     #include <stdlib.h>
+    
+    #include "config.h"
+    #include "utils.h"
 
     extern FILE* yyin;
     extern char* yytext;
     extern int yylineno; 
 
-    #define MAX_VAR_LEN 32
-    #define MAX_SCOPE_LEN 1024
-    #define MAX_ARRAY_LEN 128
-    #define MAX_VAR_NUM 128
-    #define MAX_FUNC_NUM 128
 
-    const char *symb_table_path = "symbol_table.txt";
-    const char *func_table_path = "symbol_table_functions.txt";
-    char decodeType[6][20] = {"int", "boolean", "real", "char", "string", "void"};
-
-    typedef struct {
-      short typeName;
-      // 0 - int, 1 - boolean, 2 - real, 3 - char, 4 - string
-      short isConst;
-      // isConst = 0 if variabile is not constant, 1 otherwise
-      short isArray;
-      // isArray = 0 if variable is not an array, 1 otherwise 
-      short isInit[MAX_ARRAY_LEN];
-      // isInit[i] - if the ith component of the array is initialized. 
-      // if isArray = 0 -> check isInit[0] to check if the whole variable is initialized 
-      short arrayLen;
-      // if isArray = 0 -> arrayLen will always be 1 (convention)
-    } 
-    Type;
-
-    typedef struct {
-      Type typeInfo;
-      char name[MAX_VAR_LEN];
-      char scope[MAX_SCOPE_LEN];
-      int line;
-
-      // scope will be of the following form: 
-      // only a / means global  
-      // /~/ means inside main,
-      // '/for/' or '/while' means inside a for/while   
-      // /funcName/ - means inside the funcName function
-      // /&objName/ - means a class  
-      // /&objName/method/ - means inside a method of an object
-      // Example of scopes : '/~/for/while/for/' OR '/~/printAns/' OR /&myClass/ OR /~/&myClass/printAns/
-
-    }
-    Variable;
-
-    typedef struct {
-      Variable *variables;
-      int varNumber;
-    }
-    VariableList;
-
-    typedef struct {
-      VariableList parameters;
-      char name[MAX_VAR_LEN];
-      char scope[MAX_SCOPE_LEN];
-      short returnType;
-      int line;
-    } 
-    Function;
-
-    typedef struct {
-      Function *functions;
-      int funcNumber;
-    } 
-    FunctionList;
-    
-    struct AstNode {
-      short nodeType;
-      // nodeType = 0 -> OP, nodeType = 1 -> ID, nodeType = 2 -> NUM, type = 3 -> OTHER 
-      short dataType;
-      // dataType = 0 -> int, dataType = 1 -> boolean, dataType = 2 -> real dataType = 3 -> char, dataType = 4 -> string 
-      // dataType = 5 -> void, dataType = 6 -> nodeType is operation
-      char value[MAX_VAR_LEN];
-
-      struct AstNode* left;
-      struct AstNode* right;  
-    };
-
-    struct NodeInfo {
-      short nodeType;
-      short dataType;
-      char value[MAX_VAR_LEN];
-    };
-
-    struct AstNode *init_Ast(short _nodeType, short _dataType, char *_value) 
-    {
-      struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));
-      Ast->left = Ast->right = NULL;
-      Ast->nodeType = _nodeType;
-      Ast->dataType = _dataType;
-      strncpy(Ast->value, _value, MAX_VAR_LEN);
-      return Ast;
-    }
-
-    struct AstNode *build_Ast(char *_value, struct AstNode *_left, struct AstNode *_right, int _nodeType) 
-    {
-      struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));
-      Ast->left = _left;
-      Ast->right = _right;
-      Ast->nodeType = _nodeType;
-      Ast->dataType = 6;
-      strncpy(Ast->value, _value, MAX_VAR_LEN); 
-      return Ast; 
-    }
-
-    typedef struct {
-      char varName[MAX_VAR_LEN];
-      char scope[MAX_SCOPE_LEN];
-      struct AstNode *Ast;
-      int varType;
-    } AstList;
-
-    VariableList allVariables;
-    FunctionList allFunctions;
-    
-    AstList *allAssign;
-    int cntAssign;
-
-    Variable currentVariable;
-    Function currentFunction;
-
-    struct AstNode *currentAst;
-    struct AstNode *newRoot;
-
-    short nodeType, dataType, isFunction, badExpression;
-    char currentValue[MAX_VAR_LEN], currentOperation[MAX_VAR_LEN];
-    
-    int forCounter = 0, whileCounter = 0, ifCounter = 0, elseCounter = 0;
-
-    char currentScope[MAX_SCOPE_LEN];
-
-    void init_varList(VariableList *varTable) 
-    {
-      varTable->variables = (Variable *) malloc(MAX_VAR_NUM * sizeof(Variable));
-      varTable->varNumber = 0;
-    }
-
-    void init_funcList(FunctionList *funcs) 
-    {
-      funcs->functions = (Function *) malloc(MAX_FUNC_NUM * sizeof(Function));
-      funcs->funcNumber = 0;
-    } 
-
-    void insert_var(VariableList *varTable, Variable *newVar)
-    {
-      int varNum = varTable->varNumber;
-
-      if(varNum >= MAX_VAR_NUM) {
-        printf("Variable number limit is excedeed!");
-        exit(1);
-      }
-      
-      strncpy(varTable->variables[varNum].name, newVar->name, MAX_VAR_LEN);
-      strncpy(varTable->variables[varNum].scope, newVar->scope, MAX_SCOPE_LEN);
-      
-      varTable->variables[varNum].line = newVar->line;
-      varTable->variables[varNum].typeInfo.typeName = newVar->typeInfo.typeName;
-      varTable->variables[varNum].typeInfo.isConst = newVar->typeInfo.isConst;
-      varTable->variables[varNum].typeInfo.isArray = newVar->typeInfo.isArray;
-
-      int arrayLen = newVar->typeInfo.arrayLen;
-
-      if(arrayLen >= MAX_ARRAY_LEN) {
-        printf("Array length limit is excedeed!");
-        exit(1);
-      }
-
-      varTable->variables[varNum].typeInfo.arrayLen = arrayLen;
-
-      for(int i = 0; i < arrayLen; ++i) {
-        varTable->variables[varNum].typeInfo.isInit[i] = newVar->typeInfo.isInit[i];
-      } 
-      
-      varNum++;
-      varTable->varNumber = varNum;
-    }
-    
-    void insert_func(FunctionList *funcTable, Function *newFunc)
-    {
-      int funcNum = funcTable->funcNumber;
-
-      if(funcNum >= MAX_FUNC_NUM) {
-        printf("Function number limit is excedeed!");
-        exit(1);
-      }
-      
-      strncpy(funcTable->functions[funcNum].name, newFunc->name, MAX_VAR_LEN);
-      strncpy(funcTable->functions[funcNum].scope, newFunc->scope, MAX_SCOPE_LEN);
-
-      funcTable->functions[funcNum].line = newFunc->line;
-      funcTable->functions[funcNum].returnType = newFunc->returnType;
-
-      init_varList(&funcTable->functions[funcNum].parameters);
-
-      for(int i = 0; i < newFunc->parameters.varNumber; ++i) {
-        insert_var(&funcTable->functions[funcNum].parameters, &newFunc->parameters.variables[i]);
-      }
-
-      funcNum++;
-      funcTable->funcNumber = funcNum;
-    }
-
-    void clear_varList(VariableList *varTable) 
-    {
-        free(varTable->variables);
-        varTable->varNumber = 0;
-    }
-
-    void clear_funcList(FunctionList *funcs) 
-    {
-      free(funcs->functions);
-      funcs->funcNumber = 0;
-    } 
-
-    void add_scope(char *add, short isClass) 
-    {
-        char addPath[MAX_SCOPE_LEN];
-        if(!isClass)
-          snprintf(addPath, MAX_SCOPE_LEN, "%s/", add);
-        else
-          snprintf(addPath, MAX_SCOPE_LEN, "&%s/", add);
-
-        strcat(currentScope, addPath);
-    }
-
-    void remove_from_scope() 
-    {
-        int scopeLen = strlen(currentScope) - 1;
-        currentScope[scopeLen--] = '\0';
-        while(currentScope[scopeLen] != '/') {
-          currentScope[scopeLen--] = '\0';
-        }
-    }
-    
-    void create_symbol_table() 
-    {
-      FILE *F = fopen(symb_table_path, "w");
-      if(!F) {
-        fprintf(stderr, "Error at opening symbol_table_path!");
-        exit(2);
-      }
-      fprintf(F, "The following variables where declared in the program:\n");
-      for(int i = 0; i < allVariables.varNumber; ++i) {
-          fprintf(F, "%d. Name: %s, ", i + 1, allVariables.variables[i].name);
-          
-          if(allVariables.variables[i].typeInfo.isConst) {
-            fprintf(F, "State: Constant, ");
-          }
-          else {
-            fprintf(F, "State: Mutable, ");
-          }
-          fprintf(F, "Structure: ");
-          if(allVariables.variables[i].typeInfo.isArray) {
-            fprintf(F, "Array of %d elements, ", allVariables.variables[i].typeInfo.arrayLen);
-          }
-          else {
-            fprintf(F, "Simple, ");
-          }
-          fprintf(F, "Type: %s, ", decodeType[allVariables.variables[i].typeInfo.typeName]);
-          fprintf(F, "Line: %d, ", allVariables.variables[i].line);
-          fprintf(F, "Scope: %s\n", allVariables.variables[i].scope);
-      }
-    }
-
-    void create_function_table() 
-    {
-      FILE *F = fopen(func_table_path, "w");
-      if(!F) {
-        fprintf(stderr, "Error at opening func_table_path!");
-        exit(2);
-      }
-
-      fprintf(F, "The following functions where defined in the program:\n");
-      for(int i = 0; i < allFunctions.funcNumber; ++i) {
-  
-        fprintf(F, "%d) Name: %s, ", i + 1, allFunctions.functions[i].name);
-        
-        fprintf(F, "Return Type: %s, ", decodeType[allFunctions.functions[i].returnType]);
-        fprintf(F, "Scope: %s, ", allFunctions.functions[i].scope);
-        fprintf(F, "Line: %d, ", allFunctions.functions[i].line);
-
-        fprintf(F, "Parameters: \n");
-        
-        for(int j = 0; j < allFunctions.functions[i].parameters.varNumber; ++j) {
-          Variable *curVar = &(allFunctions.functions[i].parameters.variables[j]);
-          fprintf(F, "    %d.%d) Name: %s, ", i + 1, j + 1, curVar->name);
-          if(curVar->typeInfo.isConst) {
-            fprintf(F, "State: Constant, ");
-          }
-          else {
-            fprintf(F, "State: Mutable, ");
-          }
-
-          fprintf(F, "Structure: ");
-          if(curVar->typeInfo.isArray) {
-            fprintf(F, "Array of %d elements, ", curVar->typeInfo.arrayLen);
-          }
-          else {
-            fprintf(F, "Simple, ");
-          }
-          fprintf(F, "Type: %s\n", decodeType[curVar->typeInfo.typeName]);
-          
-        }
-        //fprintf();
-      }
-    }
-
-    short check_variable_already(VariableList *varTable, char *name, char *scope, int line) 
-    {
-      int varNum = varTable->varNumber;
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name) && !strcmp(scope, varTable->variables[i].scope)) {
-            printf("Variable %s is defined multiple times (line %d and line %d) in the same scope\n",
-              name, varTable->variables[i].line, line
-            );
-            return -1;
-        }
-      }
-      return 0;
-    }
-
-    short check_var_defined(VariableList *varTable, char *name, char *scope, int line) 
-    {
-      int varNum = varTable->varNumber;
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name)
-           && strstr(scope, varTable->variables[i].scope)) {
-            return 0;
-        }
-      }
-      printf("Variable %s on line %d was not previously defined!\n", name, line);
-      return -1;
-    }
-
-    short extract_variable_type(VariableList *varTable, char *name, char *scope) 
-    {
-      int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
-          int scopeLen = strlen(varTable->variables[i].scope);
-          if(deepestScope < scopeLen) {
-            deepestScope = scopeLen;
-            pos = i;
-          }
-        }
-      }
-      if(pos == -1) {
-        return -1;
-      }
-      return varTable->variables[pos].typeInfo.typeName;
-    }
-
-    short endWith(char *str, char *pat) 
-    {
-        int n = strlen(str);
-        int m = strlen(pat);
-        if(m > n) {
-          return 0;
-        }
-        return (strcmp(str + n - m, pat) == 0);
-    }
-
-    short check_class_var(VariableList *varTable, char *varName, char *objName, int line) 
-    {
-      // variable scope should end with &objName/
-      char pattern[MAX_VAR_LEN];
-      snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
-      int varNum = varTable->varNumber;
-
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
-          return 0;          
-        }
-      }
-
-      printf("The %s.%s field used on line %d wasn't previously defined!\n", varName, objName, line);
-      return -1;
-    }
-
-    short extract_class_varType(VariableList *varTable, char *varName, char *objName) 
-    {
-      char pattern[MAX_VAR_LEN];
-      snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
-      int varNum = varTable->varNumber;
-
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
-          return varTable->variables[i].typeInfo.typeName;          
-        }
-      }
-
-      return -1;
-    }
-
-    short check_array_defined(VariableList *varTable, char *name, char *scope, int index, int line)
-    {
-      int varNum = varTable->varNumber;
-      int arrayLen = -1;
-
-      for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
-            if(varTable->variables[i].typeInfo.isArray) {
-              arrayLen = varTable->variables[i].typeInfo.arrayLen;
-            }
-            break;
-        }
-      }
-      if(arrayLen == -1) {
-        printf("Array %s on line %d was not previously defined!\n", name, line);
-        return -1;
-      }
-      if(index < 0 || index >= arrayLen) {
-        printf("Index %d of array %s on line %d is out of bounds!\n", index, name, line);
-        return -1;
-      }
-      return 0;
-    }
-
-    short check_func_defined(FunctionList *funcTable, char *name, int line) 
-    {
-      // scope doesn't matter at simple functions
-      int funcNum = funcTable->funcNumber;
-      for(int i = 0; i < funcNum; ++i) {
-        if(!strcmp(name, funcTable->functions[i].name)) {
-          return 0;
-        }
-      }
-      printf("Function %s called on line %d is not defined!\n", name, line);
-      return -1;
-    }
-
-    short extract_func_return(FunctionList *funcTable, char *name) 
-    {
-      int funcNum = funcTable->funcNumber;
-      for(int i = 0; i < funcNum; ++i) {
-        if(!strcmp(name, funcTable->functions[i].name)) {
-          return funcTable->functions[i].returnType;
-        }
-      }
-      return -1;
-    }
-    
-    void dfs(struct AstNode* nod) {
-      if(!nod) {
-        printf("This motherfucker ripped me offf!\n");
-        return;
-      }
-      printf("Current node. Value: %s. NodeType: %d. DataType: %d\n", nod->value, nod->nodeType, nod->dataType);
-      if(nod->left) {
-        printf("Left son: %s\n", nod->left->value);
-        dfs(nod->left);
-      }
-      printf("Back at %s\n", nod->value);
-      if(nod->right) {
-        printf("Right son: %s\n", nod->right->value);
-        dfs(nod->right);
-      }
-    }
-
-    short check_var_parameter(FunctionList *funcTable, char *name, char *scope) 
-    {
-      int funcNum = funcTable->funcNumber;
-      for(int i = 0; i < funcNum; ++i) {
-        int parNum = funcTable->functions[i].parameters.varNumber;
-        for(int j = 0; j < parNum; ++j) {
-          if(!strcmp(funcTable->functions[i].parameters.variables[j].name, name)) {
-            if(strstr(scope, funcTable->functions[i].name)) {
-              // if the name of the function is contained in the variable scope -> variable might be a parameter
-              return 0;
-            }
-          }
-        }
-      }
-      return -1;
-    }
-
-    short extract_param_type(FunctionList *funcTable, char *name, char *scope) 
-    {
-      int funcNum = funcTable->funcNumber;
-      for(int i = 0; i < funcNum; ++i) {
-        int parNum = funcTable->functions[i].parameters.varNumber;
-        for(int j = 0; j < parNum; ++j) {
-          if(!strcmp(funcTable->functions[i].parameters.variables[j].name, name)) {
-            if(strstr(scope, funcTable->functions[i].name)) {
-              // if the name of the function is contained in the variable scope -> variable might be a parameter
-              return funcTable->functions[i].parameters.variables[j].typeInfo.typeName;
-            }
-          }
-        }
-      }
-      return -1;
-    }
-
-
-#line 573 "c.tab.c"
+#line 85 "c.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -658,14 +170,14 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 505 "c.y"
+#line 17 "c.y"
 
     int intval;
     char* strval;
     struct AstNode *astNode;
     struct NodeInfo *nodeVal;
 
-#line 669 "c.tab.c"
+#line 181 "c.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -984,16 +496,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  16
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   378
+#define YYLAST   368
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  51
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  58
+#define YYNNTS  59
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  121
+#define YYNRULES  122
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  227
+#define YYNSTATES  228
 
 #define YYUNDEFTOK  2
 #define YYMAXUTOK   291
@@ -1044,19 +556,19 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   532,   532,   535,   536,   537,   540,   541,   542,   545,
-     548,   553,   558,   563,   568,   575,   576,   582,   583,   592,
-     582,   603,   606,   606,   609,   612,   619,   628,   631,   637,
-     637,   639,   640,   641,   644,   648,   647,   653,   652,   659,
-     662,   662,   667,   675,   675,   685,   686,   689,   695,   695,
-     703,   710,   709,   726,   732,   739,   746,   753,   760,   767,
-     785,   792,   800,   808,   812,   816,   820,   825,   829,   833,
-     837,   841,   845,   849,   853,   857,   861,   865,   869,   875,
-     898,   909,   920,   920,   923,   924,   925,   926,   927,   928,
-     929,   930,   931,   932,   933,   934,   937,   938,   940,   950,
-     951,   953,   954,   958,   957,   970,   971,   972,   973,   976,
-     977,   980,   981,   985,   984,   998,  1005,   997,  1012,  1011,
-    1022,  1025
+       0,    44,    44,    47,    48,    49,    52,    53,    54,    57,
+      60,    65,    70,    75,    80,    87,    88,    94,    95,   104,
+      94,   115,   118,   118,   121,   124,   133,   151,   154,   160,
+     160,   162,   163,   164,   167,   171,   170,   176,   175,   182,
+     185,   185,   190,   195,   195,   203,   218,   218,   231,   237,
+     237,   245,   251,   250,   263,   269,   276,   283,   290,   297,
+     304,   322,   329,   337,   345,   349,   353,   358,   363,   367,
+     371,   375,   379,   383,   387,   391,   395,   399,   403,   407,
+     413,   427,   436,   445,   445,   448,   449,   450,   451,   452,
+     453,   454,   455,   456,   457,   458,   459,   462,   463,   465,
+     475,   476,   478,   479,   483,   482,   495,   496,   497,   498,
+     501,   502,   505,   506,   510,   509,   523,   530,   522,   537,
+     536,   547,   550
 };
 #endif
 
@@ -1075,13 +587,13 @@ static const char *const yytname[] =
   "func_decl", "$@1", "$@2", "$@3", "param_list", "$@4", "param",
   "is_const", "class_decl", "$@5", "class_content", "class_method_call",
   "var_decl", "$@6", "$@7", "array_list", "$@8", "array_var", "$@9",
-  "array_content", "var_list", "$@10", "variable", "$@11", "atomic_value",
-  "expression_value", "operator", "var_assignment", "class_assignment",
-  "array_assignment", "main", "$@12", "scope_body", "func_arguments",
-  "function_call", "typeof_call", "eval_call", "repetitive_loop",
-  "for_loop", "$@13", "for_init", "for_condition", "for_step",
-  "while_loop", "$@14", "if_statement", "$@15", "$@16", "else_statement",
-  "$@17", "return_statement", YY_NULLPTR
+  "array_content", "$@10", "var_list", "$@11", "variable", "$@12",
+  "atomic_value", "expression_value", "operator", "var_assignment",
+  "class_assignment", "array_assignment", "main", "$@13", "scope_body",
+  "func_arguments", "function_call", "typeof_call", "eval_call",
+  "repetitive_loop", "for_loop", "$@14", "for_init", "for_condition",
+  "for_step", "while_loop", "$@15", "if_statement", "$@16", "$@17",
+  "else_statement", "$@18", "return_statement", YY_NULLPTR
 };
 #endif
 
@@ -1099,12 +611,12 @@ static const yytype_int16 yytoknum[] =
 };
 # endif
 
-#define YYPACT_NINF (-183)
+#define YYPACT_NINF (-188)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-96)
+#define YYTABLE_NINF (-97)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -1113,29 +625,29 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-       2,    -3,    -7,  -183,  -183,    27,   101,  -183,  -183,  -183,
-      19,  -183,  -183,   -10,  -183,   119,  -183,  -183,  -183,  -183,
-      16,  -183,  -183,  -183,  -183,  -183,  -183,     6,    -6,  -183,
-    -183,    29,   232,   -12,    23,    30,    38,    12,  -183,  -183,
-    -183,  -183,   192,    36,    40,   106,    41,    79,    43,    45,
-      55,    92,    63,    67,    68,    79,  -183,  -183,    79,    71,
-      74,  -183,    80,  -183,    84,    90,    12,    99,   103,   107,
-     109,  -183,  -183,  -183,    37,  -183,  -183,  -183,   192,  -183,
-    -183,   338,  -183,   192,   192,   192,   115,   117,   192,    79,
-    -183,    79,    79,    79,  -183,    79,    79,    79,  -183,  -183,
-    -183,   192,    16,   136,    12,  -183,  -183,    20,   192,   192,
-     189,   128,   143,   253,  -183,  -183,  -183,  -183,  -183,  -183,
-    -183,  -183,  -183,  -183,  -183,  -183,   192,   270,   287,   233,
-     127,   123,    26,  -183,   338,  -183,  -183,  -183,  -183,  -183,
-    -183,  -183,   338,  -183,   121,   125,   130,  -183,    -3,   152,
-     138,   133,   304,   321,   113,    16,   338,  -183,   134,   137,
-     140,  -183,   338,  -183,  -183,   192,  -183,   135,   192,   144,
-    -183,   142,   149,  -183,  -183,   145,   163,   164,  -183,   192,
-    -183,  -183,   192,   338,   165,   136,   173,   168,    20,   116,
-     116,   338,   167,   338,   206,  -183,   169,   116,  -183,   176,
-     177,   187,   178,   184,   207,   190,  -183,  -183,   185,  -183,
-     194,  -183,   206,  -183,  -183,   222,   196,  -183,  -183,  -183,
-     116,   201,   202,   116,  -183,   204,  -183
+      70,   -11,    -7,  -188,  -188,    27,   101,  -188,  -188,  -188,
+      19,  -188,  -188,   -12,  -188,   119,  -188,  -188,  -188,  -188,
+      11,  -188,  -188,  -188,  -188,  -188,  -188,     2,    -6,  -188,
+    -188,    15,   222,    -9,     6,    -3,    24,    12,  -188,  -188,
+    -188,  -188,   195,    26,    36,   113,    33,    79,    35,    37,
+      38,    73,    45,    55,    62,    79,  -188,  -188,    79,    63,
+      65,  -188,    71,  -188,    76,    75,    12,    84,    91,    93,
+      99,  -188,  -188,  -188,   177,  -188,  -188,  -188,   195,  -188,
+    -188,   328,  -188,   195,   195,   195,   106,   123,   195,    79,
+    -188,    79,    79,    79,  -188,    79,    79,    79,  -188,  -188,
+    -188,   195,    11,   125,    12,  -188,  -188,    20,   195,   195,
+     181,   108,   126,   243,  -188,  -188,  -188,  -188,  -188,  -188,
+    -188,  -188,  -188,  -188,  -188,  -188,   195,   260,   277,   223,
+     110,   114,   -29,  -188,   328,  -188,  -188,  -188,  -188,  -188,
+    -188,  -188,   328,  -188,   120,   121,   128,  -188,   -11,   139,
+     129,   130,   294,   311,   163,    11,   328,  -188,   133,   135,
+     146,  -188,   328,  -188,  -188,   195,  -188,   148,   195,   150,
+    -188,   151,   156,  -188,  -188,   158,   167,   168,  -188,   195,
+    -188,  -188,   195,   328,   171,   125,   183,   178,    20,   116,
+     116,   328,   176,   328,   143,  -188,   185,   116,  -188,   184,
+     190,   200,   191,   193,   214,   202,  -188,  -188,   198,  -188,
+     215,  -188,   213,  -188,  -188,   248,   216,   143,  -188,  -188,
+     116,  -188,   224,   221,   116,  -188,   233,  -188
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -1144,39 +656,39 @@ static const yytype_int16 yypact[] =
 static const yytype_int8 yydefact[] =
 {
        5,    28,     0,    17,    27,     0,    28,     4,    35,     7,
-       0,     8,     6,     0,    29,     0,     1,    82,     3,     2,
+       0,     8,     6,     0,    29,     0,     1,    83,     3,     2,
        0,    10,    11,    13,    12,    14,     9,     0,     0,    16,
-      15,     0,    28,    50,     0,    47,     0,    28,    18,   113,
-     115,   103,     0,     0,     0,     0,     0,    28,     0,     0,
-       0,     0,     0,     0,     0,    28,   101,   102,    28,     0,
+      15,     0,    28,    51,     0,    48,     0,    28,    18,   114,
+     116,   104,     0,     0,     0,     0,     0,    28,     0,     0,
+       0,     0,     0,     0,     0,    28,   102,   103,    28,     0,
        0,    36,     0,    37,     0,     0,    28,     0,     0,     0,
-       0,    54,    56,    55,    59,    57,    58,    53,     0,    63,
-      64,   121,    60,     0,     0,     0,     0,     0,     0,    28,
-      84,    28,    28,    28,    83,    28,    28,    28,    93,    94,
-      92,     0,     0,     0,    28,    30,    31,    28,     0,     0,
-     108,     0,     0,     0,    71,    72,    73,    74,    75,    76,
-      77,    78,    67,    68,    69,    70,     0,     0,     0,    96,
-       0,     0,     0,    34,    79,    88,    89,    90,    91,    85,
-      86,    87,    52,    49,    42,     0,    39,    32,    28,     0,
-       0,    21,     0,     0,    59,     0,   106,   107,     0,     0,
-      61,    66,    65,    99,   100,     0,    98,     0,     0,     0,
-      38,     0,     0,    25,    19,     0,     0,     0,   105,   110,
-      62,    97,     0,    80,     0,     0,     0,     0,    28,    28,
-      28,   109,     0,    81,     0,    41,     0,    28,    23,     0,
-       0,   112,     0,    45,     0,     0,   114,   116,     0,   111,
-       0,    44,     0,    26,    20,   120,     0,    46,   118,   117,
-      28,     0,     0,    28,   104,     0,   119
+       0,    55,    57,    56,    60,    58,    59,    54,     0,    64,
+      65,   122,    61,     0,     0,     0,     0,     0,     0,    28,
+      85,    28,    28,    28,    84,    28,    28,    28,    94,    95,
+      93,     0,     0,     0,    28,    30,    31,    28,     0,     0,
+     109,     0,     0,     0,    72,    73,    74,    75,    76,    77,
+      78,    79,    68,    69,    70,    71,     0,     0,     0,    97,
+       0,     0,     0,    34,    80,    89,    90,    91,    92,    86,
+      87,    88,    53,    50,    42,     0,    39,    32,    28,     0,
+       0,    21,     0,     0,    60,     0,   107,   108,     0,     0,
+      62,    67,    66,   100,   101,     0,    99,     0,     0,     0,
+      38,     0,     0,    25,    19,     0,     0,     0,   106,   111,
+      63,    98,     0,    81,     0,     0,     0,     0,    28,    28,
+      28,   110,     0,    82,     0,    41,     0,    28,    23,     0,
+       0,   113,     0,    45,     0,     0,   115,   117,     0,   112,
+       0,    44,     0,    26,    20,   121,     0,     0,   119,   118,
+      28,    47,     0,     0,    28,   105,     0,   120
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -183,  -183,  -183,   239,     1,   -14,  -183,    34,  -183,  -183,
-    -183,    61,  -183,  -183,  -183,  -183,  -183,   -60,   -23,    13,
-    -183,  -183,    73,  -183,  -183,  -183,    44,   -97,  -183,  -183,
-    -183,  -182,     4,  -183,  -106,  -183,  -183,  -183,  -183,   -44,
-     102,   -32,  -183,  -183,  -183,  -183,  -183,  -183,  -183,  -183,
-    -183,  -183,  -183,  -183,  -183,  -183,  -183,  -183
+    -188,  -188,  -188,   272,     1,   -14,  -188,    10,  -188,  -188,
+    -188,    78,  -188,  -188,  -188,  -188,  -188,   -60,   -23,    13,
+    -188,  -188,    94,  -188,  -188,  -188,    67,  -188,   -97,  -188,
+    -188,  -188,  -187,     4,  -188,  -106,  -188,  -188,  -188,  -188,
+     -44,   131,   -32,  -188,  -188,  -188,  -188,  -188,  -188,  -188,
+    -188,  -188,  -188,  -188,  -188,  -188,  -188,  -188,  -188
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
@@ -1184,10 +696,10 @@ static const yytype_int16 yydefgoto[] =
 {
       -1,     5,     6,     7,     8,    26,    31,    64,    15,    67,
      187,   150,   175,   151,    10,    11,    28,    65,    79,    47,
-      20,   103,   145,   171,   146,   169,   202,    34,    62,    35,
-      60,    80,   129,   126,    48,    49,    50,    19,    32,    51,
-     130,    82,    53,    54,    55,    56,    70,   158,   192,   210,
-      57,    68,    58,    69,   215,   219,   221,    59
+      20,   103,   145,   171,   146,   169,   202,   212,    34,    62,
+      35,    60,    80,   129,   126,    48,    49,    50,    19,    32,
+      51,   130,    82,    53,    54,    55,    56,    70,   158,   192,
+     210,    57,    68,    58,    69,   215,   219,   222,    59
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -1195,37 +707,36 @@ static const yytype_int16 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-      52,    30,    13,    90,   157,   143,   106,     1,     2,    46,
-       3,    98,   203,    12,    99,    52,     4,     1,    14,    12,
-       3,     4,    21,    52,    46,   148,    52,    16,    22,    23,
-     203,     4,    46,    24,     9,    46,    27,    37,   -51,     4,
-       9,    33,    36,    25,   147,   135,    81,   136,   137,   138,
-      66,   139,   140,   141,    38,   133,   -33,    52,   178,    52,
-      52,    52,   -24,    52,    52,    52,    46,    85,    46,    46,
-      46,    61,    46,    46,    46,   -48,   168,    83,    85,    66,
-     133,    84,   113,   111,     1,    63,   112,   127,   128,    89,
-      39,    91,   134,    92,    40,   209,   155,   -95,     4,    41,
-      42,    43,    44,    93,    45,   142,     1,     2,   149,     3,
-      94,    95,   152,   153,   156,    96,    97,    66,    17,   100,
-       4,     1,    21,   -95,   101,   102,    29,    39,    22,    23,
-     162,    40,   104,    24,   105,     4,    41,    42,    43,    44,
-     107,    45,   132,    25,   108,   199,   200,    85,   109,   172,
-     110,   131,    86,   205,    85,    87,    88,    52,    52,   111,
-     -95,   144,   112,    88,   159,    52,    46,    46,   160,   166,
-     167,   -43,   183,   170,    46,   -40,   222,   173,   -22,   225,
-     174,    85,   179,   191,   180,   182,   193,   185,    52,   149,
-     188,    52,    21,    71,   184,   186,    71,    46,    22,    23,
-      46,    72,    73,    24,    72,    73,   189,   190,   194,   196,
-      71,   197,   208,    25,   154,   201,   204,    74,    72,    73,
-     206,   207,   211,    75,    76,    77,    75,    76,    77,   212,
-      78,    74,   213,    78,   214,    88,   216,     1,   218,   220,
-      75,    76,    77,    39,   223,    18,   224,    40,   226,   198,
-     -95,     4,    41,    42,    43,    44,   217,    45,   195,   114,
-     115,   116,   117,   118,   119,   120,   121,   181,     0,     0,
-     122,   123,   124,   125,     0,     0,     0,     0,   165,   114,
-     115,   116,   117,   118,   119,   120,   121,     0,     0,     0,
-     122,   123,   124,   125,     0,   161,   114,   115,   116,   117,
-     118,   119,   120,   121,     0,     0,     0,   122,   123,   124,
+      52,    30,    13,    90,   157,   143,   106,   203,     4,    46,
+       9,    98,    85,    12,    99,    52,     9,     1,    14,    12,
+       3,   168,    21,    52,    46,   148,    52,    16,    22,    23,
+     203,     4,    46,    24,    27,    46,    33,    37,    36,     4,
+      38,   -52,   -49,    25,   147,   135,    81,   136,   137,   138,
+      66,   139,   140,   141,    61,   133,   -33,    52,   178,    52,
+      52,    52,   -24,    52,    52,    52,    46,    83,    46,    46,
+      46,    63,    46,    46,    46,     1,     2,    84,     3,    66,
+     133,    89,   113,    91,     1,    92,    93,   127,   128,     4,
+      39,    94,   134,    95,    40,   209,   155,   -96,     4,    41,
+      42,    43,    44,    96,    45,   142,     1,     2,   149,     3,
+      97,   100,   152,   153,   156,   101,   102,    66,    17,   105,
+       4,     1,    21,   -96,   104,   107,    29,    39,    22,    23,
+     162,    40,   108,    24,   109,     4,    41,    42,    43,    44,
+     110,    45,   131,    25,   159,   199,   200,    71,   132,   172,
+     144,   160,   166,   205,    85,    72,    73,    52,    52,    86,
+     -96,   167,    87,    88,   173,    52,    46,    46,    74,   170,
+     -43,   174,   183,   -40,    46,   -22,   223,    75,    76,    77,
+     226,   179,   180,   191,    21,    71,   193,    85,    52,   149,
+      22,    23,    52,    72,    73,    24,   185,    46,   182,    71,
+     184,    46,   186,   188,    85,    25,   154,    72,    73,   111,
+     189,   190,   112,    88,   194,    75,    76,    77,    85,   196,
+      74,   197,    78,   111,   201,   208,   112,     1,   206,    75,
+      76,    77,   204,    39,   207,   211,    78,    40,   -46,   213,
+     -96,     4,    41,    42,    43,    44,   214,    45,    88,   114,
+     115,   116,   117,   118,   119,   120,   121,   216,   217,   220,
+     122,   123,   124,   125,   218,   225,   198,   224,   165,   114,
+     115,   116,   117,   118,   119,   120,   121,   227,    18,   195,
+     122,   123,   124,   125,   221,   161,   114,   115,   116,   117,
+     118,   119,   120,   121,     0,     0,   181,   122,   123,   124,
      125,     0,   163,   114,   115,   116,   117,   118,   119,   120,
      121,     0,     0,     0,   122,   123,   124,   125,     0,   164,
      114,   115,   116,   117,   118,   119,   120,   121,     0,     0,
@@ -1237,37 +748,36 @@ static const yytype_int16 yytable[] =
 
 static const yytype_int16 yycheck[] =
 {
-      32,    15,     1,    47,   110,   102,    66,     5,     6,    32,
-       8,    55,   194,     0,    58,    47,    19,     5,    25,     6,
-       8,    19,     3,    55,    47,     5,    58,     0,     9,    10,
-     212,    19,    55,    14,     0,    58,    46,    43,    50,    19,
-       6,    25,    36,    24,   104,    89,    42,    91,    92,    93,
-      37,    95,    96,    97,    25,    87,    44,    89,   155,    91,
+      32,    15,     1,    47,   110,   102,    66,   194,    19,    32,
+       0,    55,    41,     0,    58,    47,     6,     5,    25,     6,
+       8,    50,     3,    55,    47,     5,    58,     0,     9,    10,
+     217,    19,    55,    14,    46,    58,    25,    43,    36,    19,
+      25,    50,    45,    24,   104,    89,    42,    91,    92,    93,
+      37,    95,    96,    97,    48,    87,    44,    89,   155,    91,
       92,    93,    42,    95,    96,    97,    89,    41,    91,    92,
-      93,    48,    95,    96,    97,    45,    50,    41,    41,    66,
-     112,    41,    78,    46,     5,    47,    49,    83,    84,    48,
-      11,    48,    88,    48,    15,   201,   110,    18,    19,    20,
+      93,    47,    95,    96,    97,     5,     6,    41,     8,    66,
+     112,    48,    78,    48,     5,    48,    48,    83,    84,    19,
+      11,    18,    88,    48,    15,   201,   110,    18,    19,    20,
       21,    22,    23,    48,    25,   101,     5,     6,   107,     8,
-      18,    48,   108,   109,   110,    48,    48,   104,    17,    48,
-      19,     5,     3,    44,    50,    45,     7,    11,     9,    10,
-     126,    15,    48,    14,    44,    19,    20,    21,    22,    23,
-      41,    25,    25,    24,    41,   189,   190,    41,    41,   148,
-      41,    36,    46,   197,    41,    49,    50,   189,   190,    46,
-      44,    25,    49,    50,    36,   197,   189,   190,    25,    42,
-      47,    50,   168,    48,   197,    45,   220,    25,    45,   223,
-      42,    41,    48,   179,    47,    50,   182,    45,   220,   188,
-      45,   223,     3,     4,    50,    46,     4,   220,     9,    10,
-     223,    12,    13,    14,    12,    13,    43,    43,    43,    36,
-       4,    43,    25,    24,    25,    48,    47,    25,    12,    13,
-      44,    44,    44,    34,    35,    36,    34,    35,    36,    45,
-      41,    25,    25,    41,    44,    50,    42,     5,    16,    43,
-      34,    35,    36,    11,    43,     6,    44,    15,    44,   188,
-      18,    19,    20,    21,    22,    23,   212,    25,   185,    26,
-      27,    28,    29,    30,    31,    32,    33,   165,    -1,    -1,
-      37,    38,    39,    40,    -1,    -1,    -1,    -1,    45,    26,
-      27,    28,    29,    30,    31,    32,    33,    -1,    -1,    -1,
-      37,    38,    39,    40,    -1,    42,    26,    27,    28,    29,
-      30,    31,    32,    33,    -1,    -1,    -1,    37,    38,    39,
+      48,    48,   108,   109,   110,    50,    45,   104,    17,    44,
+      19,     5,     3,    44,    48,    41,     7,    11,     9,    10,
+     126,    15,    41,    14,    41,    19,    20,    21,    22,    23,
+      41,    25,    36,    24,    36,   189,   190,     4,    25,   148,
+      25,    25,    42,   197,    41,    12,    13,   189,   190,    46,
+      44,    47,    49,    50,    25,   197,   189,   190,    25,    48,
+      50,    42,   168,    45,   197,    45,   220,    34,    35,    36,
+     224,    48,    47,   179,     3,     4,   182,    41,   220,   188,
+       9,    10,   224,    12,    13,    14,    45,   220,    50,     4,
+      50,   224,    46,    45,    41,    24,    25,    12,    13,    46,
+      43,    43,    49,    50,    43,    34,    35,    36,    41,    36,
+      25,    43,    41,    46,    48,    25,    49,     5,    44,    34,
+      35,    36,    47,    11,    44,    44,    41,    15,    45,    25,
+      18,    19,    20,    21,    22,    23,    44,    25,    50,    26,
+      27,    28,    29,    30,    31,    32,    33,    42,    45,    43,
+      37,    38,    39,    40,    16,    44,   188,    43,    45,    26,
+      27,    28,    29,    30,    31,    32,    33,    44,     6,   185,
+      37,    38,    39,    40,   217,    42,    26,    27,    28,    29,
+      30,    31,    32,    33,    -1,    -1,   165,    37,    38,    39,
       40,    -1,    42,    26,    27,    28,    29,    30,    31,    32,
       33,    -1,    -1,    -1,    37,    38,    39,    40,    -1,    42,
       26,    27,    28,    29,    30,    31,    32,    33,    -1,    -1,
@@ -1282,28 +792,28 @@ static const yytype_int16 yycheck[] =
 static const yytype_int8 yystos[] =
 {
        0,     5,     6,     8,    19,    52,    53,    54,    55,    58,
-      65,    66,    70,    55,    25,    59,     0,    17,    54,    88,
+      65,    66,    70,    55,    25,    59,     0,    17,    54,    89,
       71,     3,     9,    10,    14,    24,    56,    46,    67,     7,
-      56,    57,    89,    25,    78,    80,    36,    43,    25,    11,
-      15,    20,    21,    22,    23,    25,    69,    70,    85,    86,
-      87,    90,    92,    93,    94,    95,    96,   101,   103,   108,
-      81,    48,    79,    47,    58,    68,    70,    60,   102,   104,
-      97,     4,    12,    13,    25,    34,    35,    36,    41,    69,
-      82,    83,    92,    41,    41,    41,    46,    49,    50,    48,
-      90,    48,    48,    48,    18,    48,    48,    48,    90,    90,
+      56,    57,    90,    25,    79,    81,    36,    43,    25,    11,
+      15,    20,    21,    22,    23,    25,    69,    70,    86,    87,
+      88,    91,    93,    94,    95,    96,    97,   102,   104,   109,
+      82,    48,    80,    47,    58,    68,    70,    60,   103,   105,
+      98,     4,    12,    13,    25,    34,    35,    36,    41,    69,
+      83,    84,    93,    41,    41,    41,    46,    49,    50,    48,
+      91,    48,    48,    48,    18,    48,    48,    48,    91,    91,
       48,    50,    45,    72,    48,    44,    68,    41,    41,    41,
-      41,    46,    49,    83,    26,    27,    28,    29,    30,    31,
-      32,    33,    37,    38,    39,    40,    84,    83,    83,    83,
-      91,    36,    25,    92,    83,    90,    90,    90,    90,    90,
-      90,    90,    83,    78,    25,    73,    75,    68,     5,    55,
-      62,    64,    83,    83,    25,    56,    83,    85,    98,    36,
-      25,    42,    83,    42,    42,    45,    42,    47,    50,    76,
-      48,    74,    55,    25,    42,    63,    42,    42,    78,    48,
-      47,    91,    50,    83,    50,    45,    46,    61,    45,    43,
-      43,    83,    99,    83,    43,    73,    36,    43,    62,    90,
-      90,    48,    77,    82,    47,    90,    44,    44,    25,    85,
-     100,    44,    45,    25,    44,   105,    42,    77,    16,   106,
-      43,   107,    90,    43,    44,    90,    44
+      41,    46,    49,    84,    26,    27,    28,    29,    30,    31,
+      32,    33,    37,    38,    39,    40,    85,    84,    84,    84,
+      92,    36,    25,    93,    84,    91,    91,    91,    91,    91,
+      91,    91,    84,    79,    25,    73,    75,    68,     5,    55,
+      62,    64,    84,    84,    25,    56,    84,    86,    99,    36,
+      25,    42,    84,    42,    42,    45,    42,    47,    50,    76,
+      48,    74,    55,    25,    42,    63,    42,    42,    79,    48,
+      47,    92,    50,    84,    50,    45,    46,    61,    45,    43,
+      43,    84,   100,    84,    43,    73,    36,    43,    62,    91,
+      91,    48,    77,    83,    47,    91,    44,    44,    25,    86,
+     101,    44,    78,    25,    44,   106,    42,    45,    16,   107,
+      43,    77,   108,    91,    43,    44,    91,    44
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
@@ -1313,15 +823,15 @@ static const yytype_int8 yyr1[] =
       56,    56,    56,    56,    56,    57,    57,    59,    60,    61,
       58,    62,    63,    62,    62,    64,    64,    65,    65,    67,
       66,    68,    68,    68,    69,    71,    70,    72,    70,    73,
-      74,    73,    75,    76,    75,    77,    77,    78,    79,    78,
-      80,    81,    80,    82,    82,    82,    82,    82,    82,    82,
-      82,    82,    82,    82,    83,    83,    83,    84,    84,    84,
-      84,    84,    84,    84,    84,    84,    84,    84,    84,    85,
-      86,    87,    89,    88,    90,    90,    90,    90,    90,    90,
-      90,    90,    90,    90,    90,    90,    91,    91,    92,    93,
-      94,    95,    95,    97,    96,    98,    98,    98,    98,    99,
-      99,   100,   100,   102,   101,   104,   105,   103,   107,   106,
-     106,   108
+      74,    73,    75,    76,    75,    77,    78,    77,    79,    80,
+      79,    81,    82,    81,    83,    83,    83,    83,    83,    83,
+      83,    83,    83,    83,    83,    84,    84,    84,    85,    85,
+      85,    85,    85,    85,    85,    85,    85,    85,    85,    85,
+      86,    87,    88,    90,    89,    91,    91,    91,    91,    91,
+      91,    91,    91,    91,    91,    91,    91,    92,    92,    93,
+      94,    95,    96,    96,    98,    97,    99,    99,    99,    99,
+     100,   100,   101,   101,   103,   102,   105,   106,   104,   108,
+     107,   107,   109
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
@@ -1331,15 +841,15 @@ static const yytype_int8 yyr2[] =
        1,     1,     1,     1,     1,     1,     1,     0,     0,     0,
       12,     1,     0,     4,     0,     2,     6,     1,     0,     0,
        6,     2,     3,     0,     3,     0,     4,     0,     8,     1,
-       0,     4,     1,     0,     6,     1,     3,     1,     0,     4,
-       1,     0,     4,     1,     1,     1,     1,     1,     1,     1,
-       1,     3,     4,     1,     1,     3,     3,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     3,
-       5,     6,     0,     4,     2,     3,     3,     3,     3,     3,
-       3,     3,     2,     2,     2,     0,     1,     3,     4,     4,
-       4,     1,     1,     0,    12,     2,     1,     1,     0,     1,
-       0,     1,     0,     0,     8,     0,     0,    10,     0,     5,
-       0,     2
+       0,     4,     1,     0,     6,     1,     0,     4,     1,     0,
+       4,     1,     0,     4,     1,     1,     1,     1,     1,     1,
+       1,     1,     3,     4,     1,     1,     3,     3,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       3,     5,     6,     0,     4,     2,     3,     3,     3,     3,
+       3,     3,     3,     2,     2,     2,     0,     1,     3,     4,
+       4,     4,     1,     1,     0,    12,     2,     1,     1,     0,
+       1,     0,     1,     0,     0,     8,     0,     0,    10,     0,
+       5,     0,     2
 };
 
 
@@ -2035,77 +1545,77 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 532 "c.y"
+#line 44 "c.y"
                     { printf("cod sintactic corect! ;) \n"); }
-#line 2041 "c.tab.c"
+#line 1551 "c.tab.c"
     break;
 
   case 10:
-#line 548 "c.y"
+#line 60 "c.y"
                      {
                   if(isFunction) 
                     currentFunction.returnType = 0;
                   else currentVariable.typeInfo.typeName = 0;
                }
-#line 2051 "c.tab.c"
+#line 1561 "c.tab.c"
     break;
 
   case 11:
-#line 553 "c.y"
+#line 65 "c.y"
                        {
                   if(isFunction) 
                     currentFunction.returnType = 2;
                   else currentVariable.typeInfo.typeName = 2;
                }
-#line 2061 "c.tab.c"
+#line 1571 "c.tab.c"
     break;
 
   case 12:
-#line 558 "c.y"
+#line 70 "c.y"
                       {
                   if(isFunction) 
                     currentFunction.returnType = 1;
                   else currentVariable.typeInfo.typeName = 1;
                }
-#line 2071 "c.tab.c"
+#line 1581 "c.tab.c"
     break;
 
   case 13:
-#line 563 "c.y"
+#line 75 "c.y"
                         {
                   if(isFunction) 
                     currentFunction.returnType = 4;
                   else currentVariable.typeInfo.typeName = 4;
                }
-#line 2081 "c.tab.c"
+#line 1591 "c.tab.c"
     break;
 
   case 14:
-#line 568 "c.y"
+#line 80 "c.y"
                       {
                   if(isFunction) 
                     currentFunction.returnType = 3;
                   else currentVariable.typeInfo.typeName = 3;
                }
-#line 2091 "c.tab.c"
+#line 1601 "c.tab.c"
     break;
 
   case 16:
-#line 576 "c.y"
+#line 88 "c.y"
                    {
               currentFunction.returnType = 5;
             }
-#line 2099 "c.tab.c"
+#line 1609 "c.tab.c"
     break;
 
   case 17:
-#line 582 "c.y"
+#line 94 "c.y"
                      {isFunction = 1;}
-#line 2105 "c.tab.c"
+#line 1615 "c.tab.c"
     break;
 
   case 18:
-#line 583 "c.y"
+#line 95 "c.y"
           {
             strncpy(currentFunction.scope, currentScope, MAX_SCOPE_LEN);
             strncpy(currentFunction.name, (yyvsp[0].strval), MAX_VAR_LEN);
@@ -2114,278 +1624,315 @@ yyreduce:
             currentFunction.line = yylineno;
             isFunction = 0;
           }
-#line 2118 "c.tab.c"
+#line 1628 "c.tab.c"
     break;
 
   case 19:
-#line 592 "c.y"
+#line 104 "c.y"
           {
             insert_func(&allFunctions, &currentFunction);
             clear_varList(&currentFunction.parameters);
           }
-#line 2127 "c.tab.c"
+#line 1637 "c.tab.c"
     break;
 
   case 20:
-#line 597 "c.y"
+#line 109 "c.y"
           {
             remove_from_scope(); 
           }
-#line 2135 "c.tab.c"
+#line 1645 "c.tab.c"
     break;
 
   case 21:
-#line 603 "c.y"
+#line 115 "c.y"
                    {
               insert_var(&currentFunction.parameters, &currentVariable);
            }
-#line 2143 "c.tab.c"
+#line 1653 "c.tab.c"
     break;
 
   case 22:
-#line 606 "c.y"
+#line 118 "c.y"
                    {
               insert_var(&currentFunction.parameters, &currentVariable);
            }
-#line 2151 "c.tab.c"
+#line 1661 "c.tab.c"
     break;
 
   case 25:
-#line 612 "c.y"
+#line 124 "c.y"
                 {
+        currentVariable.value[0] = 0; 
+        // initialized with 0
         currentVariable.typeInfo.isArray = 0;
         currentVariable.typeInfo.arrayLen = 1;
         currentVariable.line = yylineno;
         strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
         strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
       }
-#line 2163 "c.tab.c"
+#line 1675 "c.tab.c"
     break;
 
   case 26:
-#line 619 "c.y"
+#line 133 "c.y"
                                     {
         currentVariable.typeInfo.isArray = 1;
-        currentVariable.typeInfo.arrayLen = (yyvsp[-2].intval);
+        if((yyvsp[-2].intval) > MAX_ARRAY_LEN) {
+          printf("Array elements limit exceeded on line %d\n", yylineno);
+        }
+        
+        currentVariable.typeInfo.arrayLen = min((yyvsp[-2].intval), MAX_ARRAY_LEN);
+        for(int i = 0; i < currentVariable.typeInfo.arrayLen; ++i) {
+          currentVariable.value[i] = 0;
+          // whole array initialized with 0
+        }
+
         currentVariable.line = yylineno;
         strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
         strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
       }
-#line 2175 "c.tab.c"
+#line 1696 "c.tab.c"
     break;
 
   case 27:
-#line 628 "c.y"
+#line 151 "c.y"
                  {
             currentVariable.typeInfo.isConst = 1;
          }
-#line 2183 "c.tab.c"
+#line 1704 "c.tab.c"
     break;
 
   case 28:
-#line 631 "c.y"
+#line 154 "c.y"
            {
             currentVariable.typeInfo.isConst = 0;
          }
-#line 2191 "c.tab.c"
+#line 1712 "c.tab.c"
     break;
 
   case 29:
-#line 637 "c.y"
+#line 160 "c.y"
                       {add_scope((yyvsp[0].strval), 1);}
-#line 2197 "c.tab.c"
+#line 1718 "c.tab.c"
     break;
 
   case 30:
-#line 637 "c.y"
+#line 160 "c.y"
                                                                 {remove_from_scope();}
-#line 2203 "c.tab.c"
+#line 1724 "c.tab.c"
     break;
 
   case 35:
-#line 648 "c.y"
+#line 171 "c.y"
          {
             currentVariable.typeInfo.isArray = 0;
             currentVariable.typeInfo.arrayLen = 1;
          }
-#line 2212 "c.tab.c"
+#line 1733 "c.tab.c"
     break;
 
   case 37:
-#line 653 "c.y"
+#line 176 "c.y"
          {
             currentVariable.typeInfo.isArray = 1;
             currentVariable.typeInfo.arrayLen = (yyvsp[-1].intval);
          }
-#line 2221 "c.tab.c"
+#line 1742 "c.tab.c"
     break;
 
   case 39:
-#line 659 "c.y"
+#line 182 "c.y"
                        {
               insert_var(&allVariables, &currentVariable);
            }
-#line 2229 "c.tab.c"
+#line 1750 "c.tab.c"
     break;
 
   case 40:
-#line 662 "c.y"
+#line 185 "c.y"
                        {
               insert_var(&allVariables, &currentVariable);
            }
-#line 2237 "c.tab.c"
+#line 1758 "c.tab.c"
     break;
 
   case 42:
-#line 667 "c.y"
+#line 190 "c.y"
                {
-              for(int i = 0; i < currentVariable.typeInfo.arrayLen; ++i) {
-                currentVariable.typeInfo.isInit[i] = 0;
-              }
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
           }
-#line 2250 "c.tab.c"
+#line 1768 "c.tab.c"
     break;
 
   case 43:
-#line 675 "c.y"
+#line 195 "c.y"
                {
-              for(int i = 0; i < currentVariable.typeInfo.arrayLen; ++i) {
-                currentVariable.typeInfo.isInit[i] = 1;
-              }
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+              arrayInitPos = 0;
           }
-#line 2263 "c.tab.c"
+#line 1779 "c.tab.c"
     break;
 
-  case 47:
-#line 689 "c.y"
-                    {
-            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
-            if(!returnVal) {
-              insert_var(&allVariables, &currentVariable);
-            }
-         }
-#line 2274 "c.tab.c"
+  case 45:
+#line 203 "c.y"
+                             {
+                if(arrayInitPos >= currentVariable.typeInfo.arrayLen) {
+                  printf("Array length excedeed when initializing on line %d. Array Length is %d, while initialization list length is %d.\n", 
+                  yylineno, currentVariable.typeInfo.arrayLen, arrayInitPos + 1);
+                }
+                else {
+                  if((yyvsp[0].nodeVal)->nodeType == 2 && (yyvsp[0].nodeVal)->dataType == 0) {
+                    currentVariable.value[arrayInitPos] = atoi((yyvsp[0].nodeVal)->value);
+                  }
+                  else {
+                    currentVariable.value[arrayInitPos] = 0;
+                  }
+                }
+                arrayInitPos++; 
+              }
+#line 1799 "c.tab.c"
+    break;
+
+  case 46:
+#line 218 "c.y"
+                             {
+                if(arrayInitPos < currentVariable.typeInfo.arrayLen) {
+                  if((yyvsp[0].nodeVal)->nodeType == 2 && (yyvsp[0].nodeVal)->dataType == 0) {
+                    currentVariable.value[arrayInitPos] = atoi((yyvsp[0].nodeVal)->value);
+                  }
+                  else {
+                    currentVariable.value[arrayInitPos] = 0;
+                  }
+                }
+                arrayInitPos++; 
+              }
+#line 1815 "c.tab.c"
     break;
 
   case 48:
-#line 695 "c.y"
+#line 231 "c.y"
                     {
             int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
             if(!returnVal) {
               insert_var(&allVariables, &currentVariable);
             }
          }
-#line 2285 "c.tab.c"
+#line 1826 "c.tab.c"
     break;
 
-  case 50:
-#line 703 "c.y"
+  case 49:
+#line 237 "c.y"
+                    {
+            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+            if(!returnVal) {
+              insert_var(&allVariables, &currentVariable);
+            }
+         }
+#line 1837 "c.tab.c"
+    break;
+
+  case 51:
+#line 245 "c.y"
               {
-            currentVariable.typeInfo.isInit[0] = 0;
             currentVariable.line = yylineno;
             strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
          }
-#line 2296 "c.tab.c"
+#line 1847 "c.tab.c"
     break;
 
-  case 51:
-#line 710 "c.y"
+  case 52:
+#line 251 "c.y"
          {
-            currentVariable.typeInfo.isInit[0] = 1;
             currentVariable.line = yylineno;
             strncpy(currentVariable.name, (yyvsp[0].strval), MAX_VAR_LEN);
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
           }
-#line 2307 "c.tab.c"
-    break;
-
-  case 52:
-#line 717 "c.y"
-          {
-            strncpy(allAssign[cntAssign].varName, (yyvsp[-3].strval), MAX_VAR_LEN);
-            strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-            allAssign[cntAssign].varType = currentVariable.typeInfo.typeName;
-            allAssign[cntAssign].Ast = (yyvsp[0].astNode);
-            cntAssign++;
-          }
-#line 2319 "c.tab.c"
+#line 1857 "c.tab.c"
     break;
 
   case 53:
-#line 726 "c.y"
+#line 257 "c.y"
+          {
+            // the case where the variable is initialized + assigned to an expression:))
+            insert_declVar_AstList(allAssign, (yyvsp[-3].strval), currentScope, (yyvsp[0].astNode), yylineno, currentVariable.typeInfo.typeName);
+          }
+#line 1866 "c.tab.c"
+    break;
+
+  case 54:
+#line 263 "c.y"
                      {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 (yyval.nodeVal)->nodeType = 2;
                 (yyval.nodeVal)->dataType = 0;
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%d", (yyvsp[0].intval));
              }
-#line 2330 "c.tab.c"
-    break;
-
-  case 54:
-#line 733 "c.y"
-             {
-                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                (yyval.nodeVal)->nodeType = 3;
-                (yyval.nodeVal)->dataType = 2;
-                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "float");
-             }
-#line 2341 "c.tab.c"
+#line 1877 "c.tab.c"
     break;
 
   case 55:
-#line 740 "c.y"
+#line 270 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                (yyval.nodeVal)->nodeType = 3;
-                (yyval.nodeVal)->dataType = 1;
-                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "false");
+                (yyval.nodeVal)->nodeType = 2;
+                (yyval.nodeVal)->dataType = 2;
+                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "float");
              }
-#line 2352 "c.tab.c"
+#line 1888 "c.tab.c"
     break;
 
   case 56:
-#line 747 "c.y"
+#line 277 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                (yyval.nodeVal)->nodeType = 3;
+                (yyval.nodeVal)->nodeType = 2;
                 (yyval.nodeVal)->dataType = 1;
-                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "true");
+                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "false");
              }
-#line 2363 "c.tab.c"
+#line 1899 "c.tab.c"
     break;
 
   case 57:
-#line 754 "c.y"
+#line 284 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                (yyval.nodeVal)->nodeType = 3;
-                (yyval.nodeVal)->dataType = 3;
-                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].strval));
+                (yyval.nodeVal)->nodeType = 2;
+                (yyval.nodeVal)->dataType = 1;
+                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", "true");
              }
-#line 2374 "c.tab.c"
+#line 1910 "c.tab.c"
     break;
 
   case 58:
-#line 761 "c.y"
+#line 291 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                (yyval.nodeVal)->nodeType = 3;
-                (yyval.nodeVal)->dataType = 4;
+                (yyval.nodeVal)->nodeType = 2;
+                (yyval.nodeVal)->dataType = 3;
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].strval));
              }
-#line 2385 "c.tab.c"
+#line 1921 "c.tab.c"
     break;
 
   case 59:
-#line 768 "c.y"
+#line 298 "c.y"
+             {
+                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                (yyval.nodeVal)->nodeType = 2;
+                (yyval.nodeVal)->dataType = 4;
+                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].strval));
+             }
+#line 1932 "c.tab.c"
+    break;
+
+  case 60:
+#line 305 "c.y"
              {
                 int parameter = 1;
                 int ret = check_var_parameter(&allFunctions, (yyvsp[0].strval), currentScope);
@@ -2403,22 +1950,22 @@ yyreduce:
                 }
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].strval));
              }
-#line 2407 "c.tab.c"
+#line 1954 "c.tab.c"
     break;
 
-  case 60:
-#line 786 "c.y"
+  case 61:
+#line 323 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                 (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].nodeVal)->value);
              }
-#line 2418 "c.tab.c"
+#line 1965 "c.tab.c"
     break;
 
-  case 61:
-#line 793 "c.y"
+  case 62:
+#line 330 "c.y"
              {
                check_class_var(&allVariables, (yyvsp[0].strval), (yyvsp[-2].strval), yylineno);
                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
@@ -2426,11 +1973,11 @@ yyreduce:
                (yyval.nodeVal)->dataType = extract_class_varType(&allVariables, (yyvsp[0].strval), (yyvsp[-2].strval));
                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval));
              }
-#line 2430 "c.tab.c"
+#line 1977 "c.tab.c"
     break;
 
-  case 62:
-#line 801 "c.y"
+  case 63:
+#line 338 "c.y"
              {
                check_array_defined(&allVariables, (yyvsp[-3].strval), currentScope, (yyvsp[-1].intval), yylineno);
                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
@@ -2438,144 +1985,145 @@ yyreduce:
                (yyval.nodeVal)->dataType = extract_variable_type(&allVariables, (yyvsp[-3].strval), currentScope);
                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s[%d]", (yyvsp[-3].strval), (yyvsp[-1].intval));
              }
-#line 2442 "c.tab.c"
-    break;
-
-  case 64:
-#line 812 "c.y"
-                              {
-                    (yyval.astNode) = init_Ast((yyvsp[0].nodeVal)->nodeType, (yyvsp[0].nodeVal)->dataType, (yyvsp[0].nodeVal)->value);
-                 }
-#line 2450 "c.tab.c"
+#line 1989 "c.tab.c"
     break;
 
   case 65:
-#line 816 "c.y"
-                                                            {
-                    (yyval.astNode) = build_Ast((yyvsp[-1].strval), (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
-                    free((yyvsp[-1].strval));
+#line 349 "c.y"
+                              {
+                    (yyval.astNode) = init_Ast((yyvsp[0].nodeVal)->nodeType, (yyvsp[0].nodeVal)->dataType, (yyvsp[0].nodeVal)->value);
                  }
-#line 2459 "c.tab.c"
+#line 1997 "c.tab.c"
     break;
 
   case 66:
-#line 820 "c.y"
-                                            {
-                    (yyval.astNode) = (yyvsp[-1].astNode);
+#line 353 "c.y"
+                                                            {
+                  //   printf("last operator %s\n", $2);
+                    (yyval.astNode) = build_Ast((yyvsp[-1].strval), (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
+                    free((yyvsp[-1].strval));
                  }
-#line 2467 "c.tab.c"
+#line 2007 "c.tab.c"
     break;
 
   case 67:
-#line 825 "c.y"
+#line 358 "c.y"
+                                            {
+                    (yyval.astNode) = (yyvsp[-1].astNode);
+                 }
+#line 2015 "c.tab.c"
+    break;
+
+  case 68:
+#line 363 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%c", '+');
          }
-#line 2476 "c.tab.c"
+#line 2024 "c.tab.c"
     break;
 
-  case 68:
-#line 829 "c.y"
+  case 69:
+#line 367 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%c", '-');
          }
-#line 2485 "c.tab.c"
+#line 2033 "c.tab.c"
     break;
 
-  case 69:
-#line 833 "c.y"
+  case 70:
+#line 371 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%c", '*');
          }
-#line 2494 "c.tab.c"
+#line 2042 "c.tab.c"
     break;
 
-  case 70:
-#line 837 "c.y"
+  case 71:
+#line 375 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%c", '/');
          }
-#line 2503 "c.tab.c"
-    break;
-
-  case 71:
-#line 841 "c.y"
-              {
-            (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
-            snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
-         }
-#line 2512 "c.tab.c"
+#line 2051 "c.tab.c"
     break;
 
   case 72:
-#line 845 "c.y"
-               {
+#line 379 "c.y"
+              {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2521 "c.tab.c"
+#line 2060 "c.tab.c"
     break;
 
   case 73:
-#line 849 "c.y"
+#line 383 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2530 "c.tab.c"
+#line 2069 "c.tab.c"
     break;
 
   case 74:
-#line 853 "c.y"
+#line 387 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2539 "c.tab.c"
+#line 2078 "c.tab.c"
     break;
 
   case 75:
-#line 857 "c.y"
-              {
-            (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
-            snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
-         }
-#line 2548 "c.tab.c"
-    break;
-
-  case 76:
-#line 861 "c.y"
+#line 391 "c.y"
                {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2557 "c.tab.c"
+#line 2087 "c.tab.c"
+    break;
+
+  case 76:
+#line 395 "c.y"
+              {
+            (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
+            snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
+         }
+#line 2096 "c.tab.c"
     break;
 
   case 77:
-#line 865 "c.y"
-              {
+#line 399 "c.y"
+               {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2566 "c.tab.c"
+#line 2105 "c.tab.c"
     break;
 
   case 78:
-#line 869 "c.y"
+#line 403 "c.y"
               {
             (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
             snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
          }
-#line 2575 "c.tab.c"
+#line 2114 "c.tab.c"
     break;
 
   case 79:
-#line 876 "c.y"
+#line 407 "c.y"
+              {
+            (yyval.strval) = (char *) malloc(MAX_VAR_LEN);
+            snprintf((yyval.strval), MAX_VAR_LEN, "%s", (yyvsp[0].strval));
+         }
+#line 2123 "c.tab.c"
+    break;
+
+  case 80:
+#line 414 "c.y"
                {
                   int parameter = 1;
                   int ret = check_var_parameter(&allFunctions, (yyvsp[-2].strval), currentScope);
@@ -2584,61 +2132,48 @@ yyreduce:
                     ret = check_var_defined(&allVariables, (yyvsp[-2].strval), currentScope, yylineno);
                   }
                   if(!ret) {
-                    strncpy(allAssign[cntAssign].varName, (yyvsp[-2].strval), MAX_VAR_LEN);
-                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-                    if(parameter) {
-                      allAssign[cntAssign].varType = extract_param_type(&allFunctions, (yyvsp[-2].strval), currentScope);
-                    }
-                    else {
-                      allAssign[cntAssign].varType = extract_variable_type(&allVariables, (yyvsp[-2].strval), currentScope);
-                    }
-                    allAssign[cntAssign].Ast = (yyvsp[0].astNode);
-                    cntAssign++;
+                    insert_var_AstList(allAssign, (yyvsp[-2].strval), currentScope, (yyvsp[0].astNode), yylineno, parameter);
                   }
                }
-#line 2600 "c.tab.c"
-    break;
-
-  case 80:
-#line 899 "c.y"
-                 {
-                    check_class_var(&allVariables, (yyvsp[-2].strval), (yyvsp[-4].strval), yylineno);
-                    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s.%s", (yyvsp[-4].strval), (yyvsp[-2].strval));
-                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-                    allAssign[cntAssign].varType = extract_class_varType(&allVariables, (yyvsp[-2].strval), (yyvsp[-4].strval));
-                    allAssign[cntAssign].Ast = (yyvsp[0].astNode);
-                    cntAssign++;
-                 }
-#line 2613 "c.tab.c"
+#line 2139 "c.tab.c"
     break;
 
   case 81:
-#line 910 "c.y"
+#line 428 "c.y"
                  {
-                    check_array_defined(&allVariables, (yyvsp[-5].strval), currentScope, (yyvsp[-3].intval), yylineno);
-                    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s[%d]", (yyvsp[-5].strval), (yyvsp[-3].intval));
-                    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-                    allAssign[cntAssign].varType = extract_variable_type(&allVariables, (yyvsp[-5].strval), currentScope);
-                    allAssign[cntAssign].Ast = (yyvsp[0].astNode);
-                    cntAssign++;
+                    int ret = check_class_var(&allVariables, (yyvsp[-2].strval), (yyvsp[-4].strval), yylineno);
+                    if(!ret) {
+                     insert_classVar_AstList(allAssign, (yyvsp[-2].strval), (yyvsp[-4].strval), currentScope, (yyvsp[0].astNode), yylineno);
+                    }
                  }
-#line 2626 "c.tab.c"
+#line 2150 "c.tab.c"
     break;
 
   case 82:
-#line 920 "c.y"
-              {add_scope("~", 0);}
-#line 2632 "c.tab.c"
+#line 437 "c.y"
+                 {
+                    int ret = check_array_defined(&allVariables, (yyvsp[-5].strval), currentScope, (yyvsp[-3].intval), yylineno);
+                    if(!ret) {
+                     insert_arrayElem_AstList(allAssign, (yyvsp[-5].strval), (yyvsp[-3].intval), currentScope, (yyvsp[0].astNode), yylineno);
+                    }
+                 }
+#line 2161 "c.tab.c"
     break;
 
   case 83:
-#line 920 "c.y"
-                                                   {remove_from_scope();}
-#line 2638 "c.tab.c"
+#line 445 "c.y"
+              {add_scope("~", 0);}
+#line 2167 "c.tab.c"
     break;
 
-  case 98:
-#line 941 "c.y"
+  case 84:
+#line 445 "c.y"
+                                                   {remove_from_scope();}
+#line 2173 "c.tab.c"
+    break;
+
+  case 99:
+#line 466 "c.y"
               {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 check_func_defined(&allFunctions, (yyvsp[-3].strval), yylineno);
@@ -2646,87 +2181,87 @@ yyreduce:
                 (yyval.nodeVal)->dataType = extract_func_return(&allFunctions, (yyvsp[-3].strval));
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "func");
               }
-#line 2650 "c.tab.c"
+#line 2185 "c.tab.c"
     break;
 
-  case 103:
-#line 958 "c.y"
+  case 104:
+#line 483 "c.y"
          {
             forCounter++; 
             char newScope[MAX_VAR_LEN];
             snprintf(newScope, MAX_VAR_LEN, "for_%d", forCounter);
             add_scope(newScope, 0);
          }
-#line 2661 "c.tab.c"
+#line 2196 "c.tab.c"
     break;
 
-  case 104:
-#line 965 "c.y"
+  case 105:
+#line 490 "c.y"
          {
             remove_from_scope();
          }
-#line 2669 "c.tab.c"
+#line 2204 "c.tab.c"
     break;
 
-  case 113:
-#line 985 "c.y"
+  case 114:
+#line 510 "c.y"
             {
               whileCounter++; 
               char newScope[MAX_VAR_LEN];
               snprintf(newScope, MAX_VAR_LEN, "while_%d", whileCounter);
               add_scope(newScope, 0);
             }
-#line 2680 "c.tab.c"
-    break;
-
-  case 114:
-#line 992 "c.y"
-            {
-              remove_from_scope();
-            }
-#line 2688 "c.tab.c"
+#line 2215 "c.tab.c"
     break;
 
   case 115:
-#line 998 "c.y"
+#line 517 "c.y"
+            {
+              remove_from_scope();
+            }
+#line 2223 "c.tab.c"
+    break;
+
+  case 116:
+#line 523 "c.y"
              {
                 ifCounter++; 
                 char newScope[MAX_VAR_LEN];
                 snprintf(newScope, MAX_VAR_LEN, "if_%d", ifCounter);
                 add_scope(newScope, 0);
              }
-#line 2699 "c.tab.c"
+#line 2234 "c.tab.c"
     break;
 
-  case 116:
-#line 1005 "c.y"
+  case 117:
+#line 530 "c.y"
              {
               remove_from_scope();
              }
-#line 2707 "c.tab.c"
+#line 2242 "c.tab.c"
     break;
 
-  case 118:
-#line 1012 "c.y"
+  case 119:
+#line 537 "c.y"
                {
                   elseCounter++; 
                   char newScope[MAX_VAR_LEN];
                   snprintf(newScope, MAX_VAR_LEN, "else_%d", elseCounter);
                   add_scope(newScope, 0);
                }
-#line 2718 "c.tab.c"
+#line 2253 "c.tab.c"
     break;
 
-  case 119:
-#line 1019 "c.y"
+  case 120:
+#line 544 "c.y"
                {
                   remove_from_scope();
                }
-#line 2726 "c.tab.c"
+#line 2261 "c.tab.c"
     break;
 
 
-#line 2730 "c.tab.c"
+#line 2265 "c.tab.c"
 
       default: break;
     }
@@ -2958,7 +2493,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 1027 "c.y"
+#line 552 "c.y"
 
 
 void yyerror(char *s)
@@ -2972,6 +2507,8 @@ int main(int argc, char** argv)
 
   init_varList(&allVariables);
   init_funcList(&allFunctions);
+  
+  // information about every assignation (varName, scope and AstTree coresponding to some Id)
   allAssign = (AstList *) malloc(MAX_VAR_NUM * sizeof(AstList));
 
   strncpy(currentScope, "/", MAX_SCOPE_LEN);
@@ -2981,14 +2518,39 @@ int main(int argc, char** argv)
   for(int i = 0; i < cntAssign; ++i) {
     printf("The variable %s on scope %s with type %d has the following AST: \n", allAssign[i].varName, allAssign[i].scope, allAssign[i].varType);
     dfs(allAssign[i].Ast);
+    int expType = check_AstTypes(allAssign[i].Ast, allAssign[i].line);
+    if(expType == -1) {
+      continue;
+    }
+    if(allAssign[i].varType != expType) {
+      printf("The left side of the assignment on line %d has a different type than the right side!\n", allAssign[i].line);
+      printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[allAssign[i].varType], decodeType[expType]);
+      continue;
+    }
+
+    int astResult = computeAst(allAssign[i].Ast, allAssign[i].scope, allAssign[i].line);
+    printf("%d\n", astResult);
+    /* if(ambigExpr) {
+      printf("The expression from the right side on line %d is ambiguous. There are operands that have different types.\n", allAssign[i].Ast->line);
+      continue;
+    }
+
+    // expression was okay :)
+    short isArray = (strchr(allAssign[i].varName, '[') != NULL);  
+    short isObjVar = (strchtr(allAssign[i].varName, '.') != NULL);
+    
+    if(!isArray && !isObjVar) {
+      // normal variable 
+      //update_var_value(allAssign[i].varName, allAssign[i].scope, );
+    }  */
+    
   }
 
   create_symbol_table();
   create_function_table();
 
-  printf("The number of functions is %d: \n", allFunctions.funcNumber);
-
   free(allAssign);
+
   clear_varList(&allVariables);
   clear_funcList(&allFunctions);
 } 
