@@ -7,6 +7,7 @@
 #define MAX_VAR_NUM 128
 #define MAX_FUNC_NUM 128
 #define MAX_EXP_LEN 128 
+#define MAX_ARGS_NR 128
 
 const char *symb_table_path = "symbol_table.txt";
 const char *func_table_path = "symbol_table_functions.txt";
@@ -14,15 +15,16 @@ const char *func_table_path = "symbol_table_functions.txt";
 char decodeType[6][20] = {"int", "boolean", "real", "char", "string", "void"};
 char currentScope[MAX_SCOPE_LEN];
 
-int cntAssign;
 int arrayInitPos = 0;
+
+int nrArgs;
+int funcArgTypes[MAX_ARGS_NR];
 
 short astTypes[MAX_EXP_LEN];
 int astTypesLen = 0;
 
 short nodeType, dataType, isFunction;
 char currentValue[MAX_VAR_LEN], currentOperation[MAX_VAR_LEN];
-
 int forCounter = 0, whileCounter = 0, ifCounter = 0, elseCounter = 0;
 
 
@@ -87,35 +89,22 @@ struct NodeInfo {
     short nodeType;
     short dataType;
     char value[MAX_VAR_LEN]; 
+    /*
+        nodeType = 0 -> OP, nodeType = 1 -> ID [ID[], ID.ID], nodeType = 2 -> NUM, nodeType = 3 -> OTHER 
+        dataType = 0 -> int, dataType = 1 -> boolean, dataType = 2 -> real, dataType = 3 -> char, dataType = 4 -> string 
+        dataType = 5 -> void, dataType = 6 -> nodeType is operation
+    */
 };
 
 struct AstNode {
     struct NodeInfo nodeInfo;
     struct AstNode* left;
     struct AstNode* right;
-    /*
-        nodeType = 0 -> OP, nodeType = 1 -> ID, nodeType = 2 -> NUM, type = 3 -> OTHER 
-        dataType = 0 -> int, dataType = 1 -> boolean, dataType = 2 -> real, dataType = 3 -> char, dataType = 4 -> string 
-        dataType = 5 -> void, dataType = 6 -> nodeType is operation
-    */
 };
-
-typedef struct {
-    char varName[MAX_VAR_LEN];
-    char scope[MAX_SCOPE_LEN];
-    int varType, line;
-    struct AstNode *Ast;
-    /*
-        Imagine it as a list of 'tuples' ((varName, scope, varType, *Ast)
-        varName, scope, varType are variables from the left side of assignation, while *Ast is the whole right expression's AST
-        line corresponds to the line where assignation takes place:)
-    */
-} AstList;
 
 VariableList allVariables;
 FunctionList allFunctions;
 Variable currentVariable;
 Function currentFunction;
-AstList *allAssign;
 
 #endif 

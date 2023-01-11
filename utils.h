@@ -7,7 +7,6 @@ struct AstNode *init_Ast(short _nodeType, short _dataType, char *_value)
     Ast->left = Ast->right = NULL;
     Ast->nodeInfo.nodeType = _nodeType;
     Ast->nodeInfo.dataType = _dataType;
-    Ast->nodeInfo;
     strncpy(Ast->nodeInfo.value, _value, MAX_VAR_LEN);
     return Ast;
 }
@@ -40,7 +39,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
 
     if(varNum >= MAX_VAR_NUM) {
         printf("Variable number limit is excedeed!");
-        exit(1);
+        return;
     }
     
     strncpy(varTable->variables[varNum].name, newVar->name, MAX_VAR_LEN);
@@ -55,7 +54,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
 
     if(arrayLen >= MAX_ARRAY_LEN) {
         printf("Array length limit is excedeed!");
-        exit(1);
+        return;
     }
 
     varTable->variables[varNum].typeInfo.arrayLen = arrayLen;      
@@ -68,8 +67,8 @@ void insert_func(FunctionList *funcTable, Function *newFunc)
     int funcNum = funcTable->funcNumber;
 
     if(funcNum >= MAX_FUNC_NUM) {
-    printf("Function number limit is excedeed!");
-    exit(1);
+        printf("Function number limit is excedeed!");
+        exit(1);
     }
     
     strncpy(funcTable->functions[funcNum].name, newFunc->name, MAX_VAR_LEN);
@@ -81,7 +80,7 @@ void insert_func(FunctionList *funcTable, Function *newFunc)
     init_varList(&funcTable->functions[funcNum].parameters);
 
     for(int i = 0; i < newFunc->parameters.varNumber; ++i) {
-    insert_var(&funcTable->functions[funcNum].parameters, &newFunc->parameters.variables[i]);
+        insert_var(&funcTable->functions[funcNum].parameters, &newFunc->parameters.variables[i]);
     }
 
     funcNum++;
@@ -138,6 +137,7 @@ void create_symbol_table()
         else {
             fprintf(F, "State: Mutable, ");
         }
+
         fprintf(F, "Structure: ");
         if(allVariables.variables[i].typeInfo.isArray) {
             fprintf(F, "Array of %d elements, ", allVariables.variables[i].typeInfo.arrayLen);
@@ -145,9 +145,20 @@ void create_symbol_table()
         else {
             fprintf(F, "Simple, ");
         }
+
         fprintf(F, "Type: %s, ", decodeType[allVariables.variables[i].typeInfo.typeName]);
         fprintf(F, "Line: %d, ", allVariables.variables[i].line);
-        fprintf(F, "Scope: %s\n", allVariables.variables[i].scope);
+        if(allVariables.variables[i].typeInfo.isArray || (strcmp(allVariables.variables[i].scope, "/") && strcmp(allVariables.variables[i].scope, "/~/") || 
+            allVariables.variables[i].typeInfo.typeName != 0)) {
+            // if it's an array or not global / declared in main don't show the value or if its not int 
+            fprintf(F, "Scope: %s\n", allVariables.variables[i].scope);
+        }   
+        else {
+            fprintf(F, "Scope: %s, ", allVariables.variables[i].scope);
+            if(!allVariables.variables[i].typeInfo.isArray) {
+                fprintf(F, "Value: %d\n", allVariables.variables[i].value[0]);
+            } 
+        }  
     }
 }
 
@@ -190,6 +201,36 @@ void create_function_table()
     }
 }
 
+short check_func_already(FunctionList *funcTable, char *funcName, VariableList *parameters, int line) {
+    int funcNum = funcTable->funcNumber;
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strncmp(funcTable->functions[i].name, funcName, MAX_VAR_LEN)) {
+            // verificam si parametrii
+            short sameSignature = 1;
+            VariableList *old_params = &funcTable->functions[i].parameters;
+            if(parameters->varNumber != old_params->varNumber) {
+                sameSignature = 0;
+            }
+            else {
+                short same_params = 1;
+                for(int j = 0; j < old_params->varNumber; ++j) {
+                    if(parameters->variables[j].typeInfo.typeName != old_params->variables[j].typeInfo.typeName) {
+                        same_params = 0;
+                        break;
+                    }
+                }
+                if(!same_params)
+                    sameSignature = 0;
+            }
+            if(sameSignature) {
+                printf("Function %s redefined on line %d. There is another function on line %d.\n", funcName, line, funcTable->functions[i].line);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
 short check_variable_already(VariableList *varTable, char *name, char *scope, int line) 
 {
     int varNum = varTable->varNumber;
@@ -208,8 +249,7 @@ short check_var_defined(VariableList *varTable, char *name, char *scope, int lin
 {
     int varNum = varTable->varNumber;
     for(int i = 0; i < varNum; ++i) {
-        if(!strcmp(name, varTable->variables[i].name)
-            && strstr(scope, varTable->variables[i].scope)) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
             return 0;
         }
     }
@@ -379,49 +419,6 @@ int min(int a, int b) {
     return b;
 }
 
-void insert_var_AstList(AstList* astList, char *varName, char *scope, struct AstNode* Ast, int _line, short paramFlag) 
-{
-    strncpy(astList[cntAssign].varName, varName, MAX_VAR_LEN);
-    strncpy(astList[cntAssign].scope, scope, MAX_SCOPE_LEN); 
-    if(paramFlag) {
-        astList[cntAssign].varType = extract_param_type(&allFunctions, varName, scope);
-    }
-    else {
-        astList[cntAssign].varType = extract_variable_type(&allVariables, varName, scope);
-    }
-    astList[cntAssign].Ast = Ast;
-    astList[cntAssign].line = _line;
-    cntAssign++;
-}
-void insert_declVar_AstList(AstList *astList, char *varName, char *scope, struct AstNode *Ast, int _line, short dataType)
-{
-    strncpy(astList[cntAssign].varName, varName, MAX_VAR_LEN);
-    strncpy(astList[cntAssign].scope, scope, MAX_SCOPE_LEN); 
-    astList[cntAssign].varType = dataType;
-    astList[cntAssign].Ast = Ast;
-    astList[cntAssign].line = _line;
-    cntAssign++;
-}
-void insert_classVar_AstList(AstList* astList, char *varName, char *obj, char *scope, struct AstNode* Ast, int _line) 
-{
-    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s.%s", obj, varName);
-    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-    allAssign[cntAssign].varType = extract_class_varType(&allVariables, varName, obj);
-    allAssign[cntAssign].Ast = Ast;
-    allAssign[cntAssign].line = _line;
-    cntAssign++;
-}
-
-void insert_arrayElem_AstList(AstList* astList, char *varName, int index, char *scope, struct AstNode* Ast, int _line) 
-{
-    snprintf(allAssign[cntAssign].varName, MAX_VAR_LEN, "%s[%d]", varName, index);
-    strncpy(allAssign[cntAssign].scope, currentScope, MAX_SCOPE_LEN); 
-    allAssign[cntAssign].varType = extract_variable_type(&allVariables, varName, currentScope);
-    allAssign[cntAssign].Ast = Ast;
-    allAssign[cntAssign].line = _line;
-    cntAssign++;
-}
-
 void extract_AstTypes(struct AstNode *nod) 
 {
     /*
@@ -473,6 +470,9 @@ short check_AstTypes(struct AstNode *Ast, int line)
     printf("The expression from line %d has operands with different types.\n", line);
     printf("    Following types of operands are used in this expression: ");
     for(int i = 0; i < precLen; ++i) {
+        if(precTypes[i] < 0) {
+            continue;
+        }
         printf("%s", decodeType[precTypes[i]]);
         if(i < precLen - 1) {
             printf(", ");
@@ -484,11 +484,22 @@ short check_AstTypes(struct AstNode *Ast, int line)
     return -1;
 }
 
+int nr_slashes(char *scope) {
+    int i = 0, slashes = 0;
+    while(*(scope + i) != '\0') {
+        if(*(scope + i) == '/') {
+            slashes++;
+        }
+        i++;
+    }
+    return slashes;
+}
+
 int extract_variable_value(VariableList *varTable, char *name, char *scope) {
     int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
-            int scopeLen = strlen(varTable->variables[i].scope);
+            int scopeLen = nr_slashes(varTable->variables[i].scope);
             if(deepestScope < scopeLen) {
                 deepestScope = scopeLen;
                 pos = i;
@@ -504,11 +515,10 @@ int extract_variable_value(VariableList *varTable, char *name, char *scope) {
 
 short extract_arrayElement_value(VariableList *varTable, char *name, int index, char *scope)
 {
-    printf("%s\n", name);
     int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope) && varTable->variables[i].typeInfo.isArray) {
-            int scopeLen = strlen(varTable->variables[i].scope);
+            int scopeLen = nr_slashes(varTable->variables[i].scope);
             if(deepestScope < scopeLen) {
                 deepestScope = scopeLen;
                 pos = i;
@@ -541,14 +551,14 @@ void update_variable_value(VariableList *varTable, char *name, char *scope, int 
     int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
-            int scopeLen = strlen(varTable->variables[i].scope);
+            int scopeLen = nr_slashes(varTable->variables[i].scope);
             if(deepestScope < scopeLen) {
                 deepestScope = scopeLen;
                 pos = i;
             }
         }
     }
-    if(pos == -1) {
+    if(pos < 0) {
         // this shouldn't happen tho
         return;
     }
@@ -560,7 +570,7 @@ void update_arrayElement_value(VariableList *varTable, char *name, int index, ch
     int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope) && varTable->variables[i].typeInfo.isArray) {
-            int scopeLen = strlen(varTable->variables[i].scope);
+            int scopeLen = nr_slashes(varTable->variables[i].scope);
             if(deepestScope < scopeLen) {
                 deepestScope = scopeLen;
                 pos = i;
@@ -582,7 +592,8 @@ void update_classVar_value(VariableList *varTable, char *varName, char *objName,
 
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(varName, varTable->variables[i].name) && endWith(varTable->variables[i].scope, pattern)) {
-            varTable->variables[i].value[0] = newVal;          
+            varTable->variables[i].value[0] = newVal;        
+            return;  
         }
     }
     // shouldn't happen tho
@@ -607,13 +618,15 @@ void update_var(char *name, char *scope, int newVal)
     if(isObj) {
         // I know fo sho it's an object
         char objName[MAX_VAR_LEN], varName[MAX_VAR_LEN];
-        sscanf(name, "%s.%s", objName, varName);
+        sscanf(name, "%[^'.'].%s", objName, varName);
         update_classVar_value(&allVariables, varName, objName, scope, newVal);
     }
 }
 
 int computeAst(struct AstNode *nod, char *scope, int line)
 {
+    printf("%s\n", nod->nodeInfo.value);
+    
     if(!nod) {
         // just in case but in shouldn't happen
         return 0;
@@ -641,7 +654,7 @@ int computeAst(struct AstNode *nod, char *scope, int line)
             if(isObj) {
                 // I know fo sho it's an object
                 char objName[MAX_VAR_LEN], varName[MAX_VAR_LEN];
-                sscanf(nod->nodeInfo.value, "%s.%s", objName, varName);
+                sscanf(nod->nodeInfo.value, "%[^'.'].%s", objName, varName);
                 return extract_classVar_value(&allVariables, varName, objName, scope);
             }
         }
@@ -692,4 +705,105 @@ int computeAst(struct AstNode *nod, char *scope, int line)
         return computeAst(nod->left, scope, line) && computeAst(nod->right, scope, line);
     }
 }
+
+void check_and_update_variable(char *varName, int varType, char *scope, struct AstNode *Ast, int line) 
+{
+    int expType = check_AstTypes(Ast, line);
+
+    if(expType == -1) {
+        return;
+    }
+
+    if(varType != expType) {
+        printf("The left side of the assignment on line %d has a different type than the right side!\n", line);
+        printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[varType], decodeType[expType]);
+        return;
+    }
+
+    int astResult = computeAst(Ast, scope, line);
+    update_var(varName, scope, astResult);
+}
+
+void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, short paramFlag) 
+{
+    int varType;
+
+    if(paramFlag) {
+        varType = extract_param_type(&allFunctions, varName, scope);
+    }
+    else { 
+        varType = extract_variable_type(&allVariables, varName, scope);
+    }
+
+    check_and_update_variable(varName, varType, scope, Ast, line);
+}
+
+void do_declVar_assign(char *varName, char *scope, struct AstNode *Ast, int line, short dataType)
+{
+    check_and_update_variable(varName, dataType, scope, Ast, line);
+}
+
+void do_classVar_assign(char *varName, char *obj, char *scope, struct AstNode* Ast, int line) 
+{
+    char actualName[MAX_VAR_LEN];
+    snprintf(actualName, MAX_VAR_LEN, "%s.%s", obj, varName);
+    int varType = extract_class_varType(&allVariables, varName, obj);
+    
+    check_and_update_variable(actualName, varType, scope, Ast, line);
+}
+
+void do_arrayElem_assign(char *varName, int index, char *scope, struct AstNode* Ast, int line) 
+{
+    char actualName[MAX_VAR_LEN];
+    snprintf(actualName, MAX_VAR_LEN, "%s[%d]", varName, index);
+    int varType = extract_variable_type(&allVariables, varName, currentScope);
+    
+    check_and_update_variable(actualName, varType, scope, Ast, line);
+}
+
+void check_func_arguments(FunctionList *funcTable, char *funcName, int *arg_types, int argNr, int line) 
+{
+    int funcNum = funcTable->funcNumber;
+    
+    int pos = -1;
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(funcName, funcTable->functions[i].name)) {
+            pos = i;
+        }
+    }
+    if(pos == -1) {
+        return;
+    }  
+
+    int paramNr = funcTable->functions[pos].parameters.varNumber;
+    if(argNr != paramNr) {
+        printf("Incorrect function call at line %d.\n", line);
+        printf("    The function %s has %d parameters, while %d arguments has been passed.\n", funcName, paramNr, argNr);
+        return;
+    }
+
+    // arg number match the paramNumber ==> paramNr == argNrs
+    VariableList *parameters = &funcTable->functions[pos].parameters;
+    short typeMatch = 1;
+    for(int i = 0; i < paramNr; ++i) {
+        if(parameters->variables[i].typeInfo.typeName != arg_types[i] && arg_types[i] != -1) {
+            // if it's -1 then it was already broken so another error will appear on the screen
+            typeMatch = 0;
+        }
+    }
+    
+    if(typeMatch) {
+        // all good -> number matched and types matched 
+        return;
+    }
+
+    printf("Incorrect function %s call at line %d. The types of the following arguments and parameters doesn't match:\n", funcName, line);
+    for(int i = 0; i < paramNr; ++i) {
+        if(parameters->variables[i].typeInfo.typeName != arg_types[i] && arg_types[i] != -1) {
+            printf("    Argument %d is having the type '%s', while type '%s' is expected.\n", 
+                        i + 1, decodeType[arg_types[i]], decodeType[parameters->variables[i].typeInfo.typeName]);
+        }
+    }
+}
+
 #endif

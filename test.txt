@@ -1,9 +1,13 @@
+function void f(int a, int b) {
+    return 2;
+}
+
+function void f(int a, real b) {
+    return 5;
+}
+
 begin
-    array int[24] arr;
-    arr[0] = 1;
-    int a = 2 + arr[0];
-    int c = arr[0] + a;
-    arr[0] = arr[0] * 2;
-    array real[35] fac;
-    fac[2] = arr[0];
+    int c = 2;
+    char d = '8';
+    TypeOf(c + b);
 end

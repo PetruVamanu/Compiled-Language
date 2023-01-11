@@ -90,7 +90,10 @@ return_type : primitive_type
             ;
             // to add return of arrays
 
-func_decl : FUNCTION {isFunction = 1;} return_type ID 
+func_decl : FUNCTION {
+            isFunction = 1;
+          } 
+          return_type ID 
           {
             strncpy(currentFunction.scope, currentScope, MAX_SCOPE_LEN);
             strncpy(currentFunction.name, $4, MAX_VAR_LEN);
@@ -101,7 +104,10 @@ func_decl : FUNCTION {isFunction = 1;} return_type ID
           } 
           '(' param_list ')' 
           {
-            insert_func(&allFunctions, &currentFunction);
+            int return_value = check_func_already(&allFunctions, currentFunction.name, &currentFunction.parameters, yylineno);
+            if(!return_value) {
+               insert_func(&allFunctions, &currentFunction);
+            }
             clear_varList(&currentFunction.parameters);
           }
           '{' scope_body '}' 
@@ -170,31 +176,39 @@ var_decl : type
          {
             currentVariable.typeInfo.isArray = 0;
             currentVariable.typeInfo.arrayLen = 1;
+            currentVariable.value[0] = 0;
          } var_list ';'
          | ARRAY type '[' C_INT ']' 
          {
             currentVariable.typeInfo.isArray = 1;
             currentVariable.typeInfo.arrayLen = $4;
+            for(int i = 0; i < $4; ++i) {
+               currentVariable.value[i] = 0;
+            }
          } array_list ';'
          ;
 
-array_list : array_var {
-              insert_var(&allVariables, &currentVariable);
-           }
-           | array_var {
-              insert_var(&allVariables, &currentVariable);
-           } ',' array_list
+array_list : array_var 
+           | array_var ',' array_list
            ;
 
 array_var : ID {
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, $1, MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+              int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+              if(!returnVal) {
+                  insert_var(&allVariables, &currentVariable);
+              }
           }
           | ID {
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, $1, MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+              int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+              if(!returnVal) {
+                  insert_var(&allVariables, &currentVariable);
+              }
               arrayInitPos = 0;
           } '=' '{' array_content '}'
           ;
@@ -227,35 +241,33 @@ array_content : atomic_value {
               } ',' array_content
               ;
 
-var_list : variable {
-            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
-            if(!returnVal) {
-              insert_var(&allVariables, &currentVariable);
-            }
-         }
-         | variable {
-            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
-            if(!returnVal) {
-              insert_var(&allVariables, &currentVariable);
-            }
-         } ',' var_list
+var_list : variable 
+         | variable ',' var_list
          ;
 
 variable : ID {
             currentVariable.line = yylineno;
             strncpy(currentVariable.name, $1, MAX_VAR_LEN);
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+            if(!returnVal) {
+               insert_var(&allVariables, &currentVariable);
+            }
          }
          | ID 
          {
             currentVariable.line = yylineno;
             strncpy(currentVariable.name, $1, MAX_VAR_LEN);
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
+            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+            if(!returnVal) {
+               insert_var(&allVariables, &currentVariable);
+            }
           } 
           '=' expression_value 
           {
             // the case where the variable is initialized + assigned to an expression:))
-            insert_declVar_AstList(allAssign, $1, currentScope, $4, yylineno, currentVariable.typeInfo.typeName);
+            do_declVar_assign($1, currentScope, $4, yylineno, currentVariable.typeInfo.typeName);
           }
          ;
 
@@ -410,7 +422,7 @@ var_assignment : ID '=' expression_value
                     ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
                   }
                   if(!ret) {
-                    insert_var_AstList(allAssign, $1, currentScope, $3, yylineno, parameter);
+                    do_var_assign($1, currentScope, $3, yylineno, parameter);
                   }
                }
                ;
@@ -419,7 +431,7 @@ class_assignment : ID '.' ID '=' expression_value
                  {
                     int ret = check_class_var(&allVariables, $3, $1, yylineno);
                     if(!ret) {
-                     insert_classVar_AstList(allAssign, $3, $1, currentScope, $5, yylineno);
+                      do_classVar_assign($3, $1, currentScope, $5, yylineno);
                     }
                  }
                  ;
@@ -428,7 +440,7 @@ array_assignment : ID '[' C_INT ']' '=' expression_value
                  {
                     int ret = check_array_defined(&allVariables, $1, currentScope, $3, yylineno);
                     if(!ret) {
-                     insert_arrayElem_AstList(allAssign, $1, $3, currentScope, $6, yylineno);
+                     do_arrayElem_assign($1, $3, currentScope, $6, yylineno);
                     }
                  }
                  ;
@@ -450,25 +462,61 @@ scope_body : var_decl scope_body
            | 
            ;
 
-func_arguments : expression_value
-               | expression_value ',' func_arguments
+func_arguments : expression_value {
+                  if(nrArgs >= MAX_ARGS_NR) {
+                     printf("Maximum number of arguments for a function had been reached on line %d\n", yylineno);
+                  }
+                  else {
+                     int type = check_AstTypes($1, yylineno);
+                     // insert into the list of arguments of types for this function :))
+                     funcArgTypes[nrArgs++] = type;
+                  }
+               }
+               | expression_value {
+                  if(nrArgs >= MAX_ARGS_NR) {
+                     printf("Maximum number of arguments for a function had been reached on line %d\n", yylineno);
+                  } 
+                  else {
+                     int type = check_AstTypes($1, yylineno);
+                     // insert into the list of arguments of types for this function :))
+                     funcArgTypes[nrArgs++] = type;
+                  }
+               } ',' func_arguments
  
-function_call : ID '(' func_arguments ')' 
+function_call : ID {
+                  nrArgs = 0;
+              }
+              '(' func_arguments ')' 
               {
-                $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                check_func_defined(&allFunctions, $1, yylineno);
-                $$->nodeType = 3;
-                $$->dataType = extract_func_return(&allFunctions, $1);
-                snprintf($$->value, MAX_VAR_LEN, "func");
+                  $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                  check_func_defined(&allFunctions, $1, yylineno);
+                  check_func_arguments(&allFunctions, $1, funcArgTypes, nrArgs, yylineno);
+
+                  $$->nodeType = 3;
+                  $$->dataType = extract_func_return(&allFunctions, $1);
+                  snprintf($$->value, MAX_VAR_LEN, "func");
               }
               ;
 
-typeof_call : TYPEOF '(' expression_value ')'
-eval_call : EVAL '(' expression_value ')'
+typeof_call : TYPEOF '(' expression_value ')' {
+   // Third parameter is expression value, $3 -> AST coresponding to that expression
+   int type = check_AstTypes($3, yylineno);
+   if(type != -1) {
+      printf("The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
+   }
+}
+
+eval_call : EVAL '(' expression_value ')' {
+   int type = check_AstTypes($3, yylineno);
+   if(type != -1) {
+      int result = computeAst($3, currentScope, yylineno);
+      printf("The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
+   }
+}
 
 repetitive_loop : for_loop 
                 | while_loop
-                ;
+                ; 
 
 for_loop : FOR 
          {
@@ -549,38 +597,19 @@ void yyerror(char *s)
 
 int main(int argc, char** argv)
 {
-  yyin = fopen(argv[1],"r");
+  yyin = fopen(argv[1], "r");
 
   init_varList(&allVariables);
   init_funcList(&allFunctions);
   
   // information about every assignation (varName, scope and AstTree coresponding to some Id)
-  allAssign = (AstList *) malloc(MAX_VAR_NUM * sizeof(AstList));
 
   strncpy(currentScope, "/", MAX_SCOPE_LEN);
 
   yyparse();
 
-  for(int i = 0; i < cntAssign; ++i) {
-      printf("The variable %s on scope %s is assigned to the following value: \n", allAssign[i].varName, allAssign[i].scope);
-      int expType = check_AstTypes(allAssign[i].Ast, allAssign[i].line);
-      if(expType == -1) {
-         continue;
-      }
-      if(allAssign[i].varType != expType) {
-         printf("The left side of the assignment on line %d has a different type than the right side!\n", allAssign[i].line);
-         printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[allAssign[i].varType], decodeType[expType]);
-         continue;
-      }
-      int astResult = computeAst(allAssign[i].Ast, allAssign[i].scope, allAssign[i].line);
-      update_var(allAssign[i].varName, allAssign[i].scope, astResult);
-      printf("%d\n", astResult);
-  }
-
   create_symbol_table();
   create_function_table();
-
-  free(allAssign);
 
   clear_varList(&allVariables);
   clear_funcList(&allFunctions);

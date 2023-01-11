@@ -71,11 +71,11 @@
 }
 
 (0|[1-9][0-9]*)\.[0-9]+ {return C_FLOAT;}
-\"[?!,.;" "a-zA-Z]*\" {
+\"[?!,.;" "a-zA-Z0-9]*\" {
     yylval.strval = strdup(yytext); 
     return C_STRING;
 }
-\'[?!,.;" "a-zA-Z]\' {
+\'[?!,.;" "a-zA-Z0-9]\' {
     yylval.strval = strdup(yytext); 
     return C_CHAR;
 }
