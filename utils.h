@@ -44,6 +44,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
     
     strncpy(varTable->variables[varNum].name, newVar->name, MAX_VAR_LEN);
     strncpy(varTable->variables[varNum].scope, newVar->scope, MAX_SCOPE_LEN);
+    strncpy(varTable->variables[varNum].value, newVar->value, MAX_ARRAY_LEN);
     
     varTable->variables[varNum].line = newVar->line;
     varTable->variables[varNum].typeInfo.typeName = newVar->typeInfo.typeName;

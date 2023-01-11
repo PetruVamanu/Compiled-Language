@@ -8,6 +8,10 @@ function void f(int a, real b) {
 
 begin
     int c = 2;
+    int b = 11;
     char d = '8';
     TypeOf(c + b);
+    array int[4] x = {11,2,3,4};
+    array char[5] q = {'a', 'b', 'c'};
+    Eval(x[0]);
 end

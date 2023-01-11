@@ -8,7 +8,6 @@
 "const" {return CONST;}
 "array" {return ARRAY;}
 "int" {return INT;}
-"const" {return CONST;}
 "function" {return FUNCTION;}
 "class" {return CLASS;}
 "real" {return FLOAT;}
