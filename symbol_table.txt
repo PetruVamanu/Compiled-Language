@@ -1,6 +1,0 @@
-The following variables where declared in the program:
-1. Name: var1, State: Mutable, Structure: Simple, Type: string, Line: 2, Scope: /~/&ob2/
-2. Name: var2, State: Mutable, Structure: Simple, Type: string, Line: 2, Scope: /~/&ob2/
-3. Name: zz, State: Mutable, Structure: Simple, Type: int, Line: 4, Scope: /~/&ob2/f/
-4. Name: yy, State: Mutable, Structure: Simple, Type: int, Line: 4, Scope: /~/&ob2/f/
-5. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 10, Scope: /~/, Value: 0

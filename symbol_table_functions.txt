@@ -1,3 +1,0 @@
-The following functions where defined in the program:
-1) Name: f, Return Type: int, Scope: /~/&ob2/, Line: 3, Parameters: 
-    1.1) Name: b, State: Mutable, Structure: Simple, Type: int

@@ -1,11 +1,22 @@
 class PetriAlex {
+    int a;
     string var1, var2;
-    function int f(int b) {
+    function int f(char b, string s) {
         int zz, yy;
         return 2;
     }
 }
+function int gg(int x)
+{
+    return x + 1;
+}
 begin
+    int b = 11;
+    char d = '8';
+    int q =gg(gg(b));
+    array int[4] x = {11,2,3,4};
+    Eval(x[0]);
+    int c ;
     &PetriAlex ob2;
     int a = ob2->f('2', "sasaas");
 end
