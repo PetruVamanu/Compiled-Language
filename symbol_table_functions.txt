@@ -1,6 +1,10 @@
 The following functions where defined in the program:
 1) Name: testFunction, Return Type: int, Scope: /, Line: 13, Parameters: 
+<<<<<<< HEAD
     1.1) Name: x, State: Mutable, Structure: Simple, Type: int
+=======
+    1.1) Name: x123, State: Mutable, Structure: Simple, Type: int
+>>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
     1.2) Name: z, State: Mutable, Structure: Simple, Type: real
 2) Name: testFunction, Return Type: int, Scope: /, Line: 18, Parameters: 
     2.1) Name: x, State: Mutable, Structure: Simple, Type: int
@@ -9,3 +13,7 @@ The following functions where defined in the program:
     3.1) Name: param1, State: Mutable, Structure: Simple, Type: int
     3.2) Name: param2, State: Mutable, Structure: Simple, Type: int
     3.3) Name: f, State: Mutable, Structure: Simple, Type: real
+<<<<<<< HEAD
+=======
+4) Name: return1, Return Type: int, Scope: /, Line: 30, Parameters: 
+>>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76

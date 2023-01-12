@@ -4,15 +4,15 @@ int x2;
 int y;
 array int[10] arr;
 boolean myBool = false;
-array real[15] v1, v2;
+array real[15] v1, v2 ,myRealArray = {1.1, 0.2, 9.9};
 real f = 20.0 ;
 real f1;
 string  titlu = "proiectLFAC";
 char Litera = 'G';
 
-function int testFunction(int x, real z) {
-    x = x + 2;
-    return x * x;
+function int testFunction(int x123, real z) {
+    x123 = x123 + 2;
+    return x123 * x123;
 }
 
 function int testFunction(int x, int z) {
@@ -27,11 +27,15 @@ function int test(int param1, int param2, real f) {
     return param1;
 }
 
+function int return1()
+{
+    return 1;
+}
+
 class C1 {
     int x, q;
     real avg;
     function void do(int x, int qs){
-        x = x - qs;
     }
 }
 
@@ -81,7 +85,7 @@ begin
     Eval(x+test(x1,x,f)) ; 	
     TypeOf(x+23);
     TypeOf(f-30.0);
-
+    Eval(return1());
 end
 
 

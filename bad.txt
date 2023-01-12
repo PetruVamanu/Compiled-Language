@@ -23,6 +23,10 @@ function int test(int param) {
     return param;
 }
 
+function int return1()
+{
+    return 1;
+}
 
 begin
     x3 = x + 2;
@@ -36,4 +40,15 @@ begin
     Eval(f1);
     Eval(f1+x);
 	test(5+f1);
+
+
+
+    array int[130] xq;
+    array int[3] myIniArray = {1,2,3,4,5};
+    array int[20] a02 = {2.9, 2, 1, 293}; 
+    int result = test(x, x2, x3);
+    result = testFunction(nedefArray[0]);
+    int cevaaa = nedefFunc(x);
+    int a = 2 + return1();
+
 end

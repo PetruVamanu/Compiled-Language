@@ -77,7 +77,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
     int arrayLen = newVar->typeInfo.arrayLen;
 
     if(arrayLen >= MAX_ARRAY_LEN) {
-        printf("\033[31mArray length limit is excedeed!\033[0m");
+        printf("\033[31mArray length limit is excedeed at line %d!\n\033[0m", newVar->line);
         error_code = 1;
         return;
     }
