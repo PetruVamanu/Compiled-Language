@@ -298,7 +298,7 @@ short check_class_var(VariableList *varTable, char *varName, char *objName, int 
         }
     }
 
-    printf("The %s.%s field used on line %d wasn't previously defined!\n", varName, objName, line);
+    printf("The %s.%s field used on line %d wasn't previously defined!\n", objName, varName, line);
     return -1;
 }
 
@@ -350,7 +350,25 @@ short check_func_defined(FunctionList *funcTable, char *name, int line)
             return 0;
         }
     }
+
     printf("Function %s called on line %d is not defined!\n", name, line);
+    return -1;
+}
+
+short check_method_defined(FunctionList *funcTable, char *methodName, char *objName,  int line) 
+{
+    int funcNum = funcTable->funcNumber;
+    char pattern[MAX_VAR_LEN];
+    snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(methodName, funcTable->functions[i].name) && endWith(funcTable->functions[i].scope, pattern)) {
+            // we found the function name whose scope ends with &objName/. so -> methodName is indeed a method
+            return 0;
+        }
+    }
+
+    printf("Method %s.%s called on line %d is not defined!\n", objName, methodName, line);
     return -1;
 }
 
@@ -364,18 +382,20 @@ short extract_func_return(FunctionList *funcTable, char *name)
     }
     return -1;
 }
-    
-void dfs(struct AstNode* nod) {
-    printf("Current node. Value: %s. NodeType: %d. DataType: %d\n", nod->nodeInfo.value, nod->nodeInfo.nodeType, nod->nodeInfo.dataType);
-    if(nod->left) {
-        printf("Left son: %s\n", nod->left->nodeInfo.value);
-        dfs(nod->left);
+
+short extract_method_return(FunctionList *funcTable, char *methodName, char *objName)
+{
+    int funcNum = funcTable->funcNumber;
+    char pattern[MAX_VAR_LEN];
+    snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(methodName, funcTable->functions[i].name) && endWith(funcTable->functions[i].scope, pattern)) {
+            // we found the function name whose scope ends with &objName/. so -> methodName is indeed a method
+            return funcTable->functions[i].returnType;
+        }
     }
-    printf("Back at %s\n", nod->nodeInfo.value);
-    if(nod->right) {
-        printf("Right son: %s\n", nod->right->nodeInfo.value);
-        dfs(nod->right);
-    }
+    return -1;
 }
 
 short check_var_parameter(FunctionList *funcTable, char *name, char *scope) 
@@ -761,29 +781,24 @@ void do_arrayElem_assign(char *varName, int index, char *scope, struct AstNode* 
     check_and_update_variable(actualName, varType, scope, Ast, line);
 }
 
-void check_func_arguments(FunctionList *funcTable, char *funcName, int *arg_types, int argNr, int line) 
+void match_arguments(char *funcName, int *arg_types, int argNr, VariableList *parameters, int line, short isMethod) 
 {
-    int funcNum = funcTable->funcNumber;
-    
-    int pos = -1;
-    for(int i = 0; i < funcNum; ++i) {
-        if(!strcmp(funcName, funcTable->functions[i].name)) {
-            pos = i;
-        }
+    int paramNr = parameters->varNumber;
+    char func_or_method[MAX_VAR_LEN];
+    if(!isMethod) {
+        strncpy(func_or_method, "function", MAX_VAR_LEN);
     }
-    if(pos == -1) {
-        return;
-    }  
+    else {
+        strncpy(func_or_method, "method", MAX_VAR_LEN);
+    }
 
-    int paramNr = funcTable->functions[pos].parameters.varNumber;
     if(argNr != paramNr) {
-        printf("Incorrect function call at line %d.\n", line);
-        printf("    The function %s has %d parameters, while %d arguments has been passed.\n", funcName, paramNr, argNr);
+        printf("Incorrect %s call at line %d.\n", func_or_method, line);
+        printf("    The %s %s has %d parameters, while %d arguments has been passed.\n", func_or_method, funcName, paramNr, argNr);
         return;
     }
 
     // arg number match the paramNumber ==> paramNr == argNrs
-    VariableList *parameters = &funcTable->functions[pos].parameters;
     short typeMatch = 1;
     for(int i = 0; i < paramNr; ++i) {
         if(parameters->variables[i].typeInfo.typeName != arg_types[i] && arg_types[i] != -1) {
@@ -797,13 +812,53 @@ void check_func_arguments(FunctionList *funcTable, char *funcName, int *arg_type
         return;
     }
 
-    printf("Incorrect function %s call at line %d. The types of the following arguments and parameters doesn't match:\n", funcName, line);
+    printf("Incorrect %s %s call at line %d. The types of the following arguments and parameters doesn't match:\n", func_or_method, funcName, line);
     for(int i = 0; i < paramNr; ++i) {
         if(parameters->variables[i].typeInfo.typeName != arg_types[i] && arg_types[i] != -1) {
             printf("    Argument %d is having the type '%s', while type '%s' is expected.\n", 
                         i + 1, decodeType[arg_types[i]], decodeType[parameters->variables[i].typeInfo.typeName]);
         }
     }
+}
+
+void check_func_arguments(FunctionList *funcTable, char *funcName, int *arg_types, int argNr, int line) 
+{
+    int funcNum = funcTable->funcNumber;
+    
+    int pos = -1;
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(funcName, funcTable->functions[i].name)) {
+            pos = i;
+        }
+    }
+
+    if(pos == -1) {
+        return;
+    }  
+    match_arguments(funcName, arg_types, argNr, &funcTable->functions[pos].parameters, line, 0);
+}
+
+void check_method_arguments(FunctionList *funcTable, char *methodName, char *objName, int *arg_types, int argNr, int line) 
+{
+    int funcNum = funcTable->funcNumber;
+    char pattern[MAX_VAR_LEN];
+    snprintf(pattern, MAX_VAR_LEN, "&%s/", objName);
+
+    int pos = -1;
+    for(int i = 0; i < funcNum; ++i) {
+        if(!strcmp(methodName, funcTable->functions[i].name) && endWith(funcTable->functions[i].scope, pattern)) {
+            // we found the function name whose scope ends with &objName/. so -> methodName is indeed a method
+            pos = i;
+        }
+    }
+
+    if(pos == -1) {
+        return;
+    }  
+
+    char fullName[MAX_VAR_LEN];
+    snprintf(fullName, MAX_VAR_LEN, "%s->%s", objName, methodName);
+    match_arguments(fullName, arg_types, argNr, &funcTable->functions[pos].parameters, line, 1);
 }
 
 #endif

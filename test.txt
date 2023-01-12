@@ -1,13 +1,12 @@
-function void f(int a, int b) {
-    return 2;
+class PetriAlex {
+    int a;
+    function int f(int a) {
+        return 2;
+    }
 }
-
-function void f(int a, real b) {
-    return 5;
-}
-
 begin
-    int c = 2;
-    char d = '8';
-    TypeOf(c + b);
+    PetriAlex.a = 2;
+    int c = PetriAlex.a + 4;
+    Eval(c);
+    int c = PetriAlex->f(2, 4);
 end

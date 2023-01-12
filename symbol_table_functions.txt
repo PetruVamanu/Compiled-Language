@@ -1,7 +1,3 @@
 The following functions where defined in the program:
-1) Name: f, Return Type: void, Scope: /, Line: 1, Parameters: 
+1) Name: f, Return Type: int, Scope: /&PetriAlex/, Line: 3, Parameters: 
     1.1) Name: a, State: Mutable, Structure: Simple, Type: int
-    1.2) Name: b, State: Mutable, Structure: Simple, Type: int
-2) Name: f, Return Type: void, Scope: /, Line: 5, Parameters: 
-    2.1) Name: a, State: Mutable, Structure: Simple, Type: int
-    2.2) Name: b, State: Mutable, Structure: Simple, Type: real

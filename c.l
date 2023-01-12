@@ -29,6 +29,9 @@
     yylval.strval = strdup(yytext); 
     return EQ;
 }
+"->" {
+    return MCALL;
+}
 "!=" {
     yylval.strval = strdup(yytext);
     return NEQ;
@@ -45,6 +48,7 @@
     yylval.strval = strdup(yytext);
     return GT;
 }
+
 ">=" {
     yylval.strval = strdup(yytext);
     return GEQ;

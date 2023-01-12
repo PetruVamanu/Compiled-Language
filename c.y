@@ -23,12 +23,12 @@
 
 %start s
 
-%token INT C_FLOAT ARRAY CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE BEGINP ENDP CONST FOR RET TYPEOF EVAL CHAR 
+%token INT C_FLOAT ARRAY CLASS VOID FUNCTION FLOAT STRING WHILE BTRUE BFALSE BOOL IF ELSE BEGINP ENDP CONST FOR RET TYPEOF EVAL CHAR MCALL
 <strval>ID EQ NEQ LEQ GEQ OR AND LT GT C_CHAR C_STRING 
 <intval>C_INT 
 
 %type<astNode>expression_value
-%type<nodeVal>atomic_value function_call 
+%type<nodeVal>atomic_value function_call class_method_call
 
 %left OR
 %left AND 
@@ -165,12 +165,9 @@ is_const : CONST {
 class_decl : CLASS ID {add_scope($2, 1);} '{' class_content '}' {remove_from_scope();}
            ;
 class_content : var_decl class_content
-              | func_decl ';' class_content
+              | func_decl  class_content
               |
               ;
-
-class_method_call : ID '.' function_call
-                  ;
 
 var_decl : type 
          {
@@ -337,6 +334,12 @@ atomic_value : C_INT {
                 $$->dataType = $1->dataType;
                 snprintf($$->value, MAX_VAR_LEN, "%s", $1->value);
              }
+             | class_method_call {
+                  $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
+                  $$->nodeType = $1->nodeType;
+                  $$->dataType = $1->dataType;
+                  snprintf($$->value, MAX_VAR_LEN, "%s", $1->value);
+               }
              | ID '.' ID 
              {
                check_class_var(&allVariables, $3, $1, yylineno);
@@ -353,7 +356,6 @@ atomic_value : C_INT {
                $$->dataType = extract_variable_type(&allVariables, $1, currentScope);
                snprintf($$->value, MAX_VAR_LEN, "%s[%d]", $1, $3);
              }
-             | class_method_call
              ;
 
 expression_value : 
@@ -450,9 +452,9 @@ main : BEGINP {add_scope("~", 0);} scope_body ENDP {remove_from_scope();}
 
 scope_body : var_decl scope_body
            | function_call ';' scope_body
+           | class_method_call ';' scope_body
            | typeof_call ';' scope_body
            | eval_call ';' scope_body 
-           | class_method_call ';' scope_body
            | var_assignment ';' scope_body
            | class_assignment ';' scope_body
            | array_assignment ';' scope_body
@@ -489,14 +491,40 @@ function_call : ID {
               '(' func_arguments ')' 
               {
                   $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
-                  check_func_defined(&allFunctions, $1, yylineno);
-                  check_func_arguments(&allFunctions, $1, funcArgTypes, nrArgs, yylineno);
-
-                  $$->nodeType = 3;
-                  $$->dataType = extract_func_return(&allFunctions, $1);
-                  snprintf($$->value, MAX_VAR_LEN, "func");
+                  if(!inObj) {
+                     // it's a simple function call
+                     int retValue = check_func_defined(&allFunctions, $1, yylineno);
+                     if(!retValue){
+                        check_func_arguments(&allFunctions, $1, funcArgTypes, nrArgs, yylineno);
+                     }
+                     $$->nodeType = 3;
+                     $$->dataType = extract_func_return(&allFunctions, $1);
+                     snprintf($$->value, MAX_VAR_LEN, "func");
+                  }
+                  else {
+                     // It's a method from a class. The name of the class is stored in objName
+                     int retValue = check_method_defined(&allFunctions, $1, objName,  yylineno);
+                     if(!retValue) {
+                        check_method_arguments(&allFunctions, $1, objName, funcArgTypes, nrArgs, yylineno);
+                     }
+                     $$->nodeType = 3;
+                     $$->dataType = extract_method_return(&allFunctions, $1, objName);
+                     snprintf($$->value, MAX_VAR_LEN, "method");
+                  }
               }
               ;
+
+class_method_call : ID MCALL {
+                     inObj = 1;
+                     strncpy(objName, $1, MAX_VAR_LEN); 
+                  } 
+                  function_call 
+                  {
+                     $$->nodeType = $4->nodeType;
+                     $$->dataType = $4->dataType;
+                     strncpy($$->value, "method", MAX_VAR_LEN);
+                     inObj = 0;
+                  }
 
 typeof_call : TYPEOF '(' expression_value ')' {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
