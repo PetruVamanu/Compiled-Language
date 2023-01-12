@@ -1,6 +1,26 @@
 #ifndef utils
 #define utils
 
+char *concatenate_and_free(char *s1, char *s2) {
+    char *result;
+    int len1 = strlen(s1);
+    int len2 = strlen(s2);
+
+    result = (char *)malloc((len1 + len2 + 1) * sizeof(char));
+    if (result == NULL) {
+        printf("Error allocating memory!\n");
+        return NULL;
+    }
+
+    strcpy(result, s1);
+    strcat(result, s2);
+
+    free(s1);
+    free(s2);
+
+    return result;
+}
+char * final_result;
 struct AstNode *init_Ast(short _nodeType, short _dataType, char *_value) 
 {
     struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));
