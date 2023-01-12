@@ -1,7 +1,6 @@
 The following variables where declared in the program:
-1. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /&PetriAlex/
-2. Name: b, State: Mutable, Structure: Simple, Type: int, Line: 8, Scope: /~/, Value: 11
-3. Name: d, State: Mutable, Structure: Simple, Type: char, Line: 9, Scope: /~/
-4. Name: x, State: Mutable, Structure: Array of 4 elements, Type: int, Line: 11, Scope: /~/
-5. Name: q, State: Mutable, Structure: Array of 5 elements, Type: char, Line: 12, Scope: /~/
-6. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 15, Scope: /~/, Value: 0
+1. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 1, Scope: /, Value: 23
+2. Name: x1, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /, Value: 0
+3. Name: x2, State: Mutable, Structure: Simple, Type: int, Line: 5, Scope: /, Value: 0
+4. Name: f1, State: Mutable, Structure: Simple, Type: real, Line: 6, Scope: /
+5. Name: s, State: Mutable, Structure: Simple, Type: string, Line: 7, Scope: /

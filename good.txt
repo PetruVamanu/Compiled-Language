@@ -32,7 +32,7 @@ class C1 {
     real avg;
     function void do(){
         x = x - q;
-    };
+    }
 }
 
 class C2 {
@@ -73,7 +73,7 @@ begin
     }
 
 
-    x = test(test(x1,3,f)+2, y+4) + (30 - y * arr[2]) - 10;
+    x = test(test(x1,3,f)+2, y+4 , f) + (30 - y * arr[2]) - 10;
     x1 = x*100 + 5 * 100 + arr[2];
     Eval(x*10-100);
     Eval(x1);

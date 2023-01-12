@@ -62,6 +62,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
 
     if(varNum >= MAX_VAR_NUM) {
         printf("Variable number limit is excedeed!");
+        error_code = 1;
         return;
     }
     
@@ -76,7 +77,8 @@ void insert_var(VariableList *varTable, Variable *newVar)
     int arrayLen = newVar->typeInfo.arrayLen;
 
     if(arrayLen >= MAX_ARRAY_LEN) {
-        printf("Array length limit is excedeed!");
+        printf("\033[31mArray length limit is excedeed!\033[0m");
+        error_code = 1;
         return;
     }
 
@@ -94,7 +96,8 @@ void insert_func(FunctionList *funcTable, Function *newFunc)
     int funcNum = funcTable->funcNumber;
 
     if(funcNum >= MAX_FUNC_NUM) {
-        printf("Function number limit is excedeed!");
+        printf("\033[31mFunction number limit is excedeed!\033[0m");
+        error_code = 1;
         exit(1);
     }
     
@@ -250,7 +253,8 @@ short check_func_already(FunctionList *funcTable, char *funcName, VariableList *
                     sameSignature = 0;
             }
             if(sameSignature) {
-                printf("Function %s redefined on line %d. There is another function on line %d.\n", funcName, line, funcTable->functions[i].line);
+                printf("\033[31mFunction %s redefined on line %d. There is another function on line %d.\n\033[0m", funcName, line, funcTable->functions[i].line);
+                error_code = 1;
                 return -1;
             }
         }
@@ -263,9 +267,10 @@ short check_variable_already(VariableList *varTable, char *name, char *scope, in
     int varNum = varTable->varNumber;
     for(int i = 0; i < varNum; ++i) {
         if(!strcmp(name, varTable->variables[i].name) && !strcmp(scope, varTable->variables[i].scope)) {
-            printf("Variable %s is defined multiple times (line %d and line %d) in the same scope\n",
+            printf("\033[31mVariable %s is defined multiple times (line %d and line %d) in the same scope\n\033[0m",
                 name, varTable->variables[i].line, line
             );
+            error_code = 1;
             return -1;
         }
     }
@@ -280,7 +285,8 @@ short check_var_defined(VariableList *varTable, char *name, char *scope, int lin
             return 0;
         }
     }
-    printf("Variable %s on line %d was not previously defined!\n", name, line);
+    printf("\033[31mVariable %s on line %d was not previously defined!\n\033[0m", name, line);
+    error_code = 1;
     return -1;
 }
 
@@ -325,7 +331,8 @@ short check_class_var(VariableList *varTable, char *varName, char *objName, int 
         }
     }
 
-    printf("The %s.%s field used on line %d wasn't previously defined!\n", objName, varName, line);
+    printf("\033[31mThe %s.%s field used on line %d wasn't previously defined!\n\033[0m", objName, varName, line);
+    error_code = 1;
     return -1;
 }
 
@@ -358,11 +365,13 @@ short check_array_defined(VariableList *varTable, char *name, char *scope, int i
         }
     }
     if(arrayLen == -1) {
-        printf("Array %s on line %d was not previously defined!\n", name, line);
+        printf("\033[31mArray %s on line %d was not previously defined!\n\033[0m", name, line);
+        error_code = 1;
         return -1;
     }
     if(index < 0 || index >= arrayLen) {
-        printf("Index %d of array %s on line %d is out of bounds!\n", index, name, line);
+        printf("\033[31mIndex %d of array %s on line %d is out of bounds!\n\033[0m", index, name, line);
+        error_code = 1;
         return -1;
     }
     return 0;
@@ -378,7 +387,8 @@ short check_func_defined(FunctionList *funcTable, char *name, int line)
         }
     }
 
-    printf("Function %s called on line %d is not defined!\n", name, line);
+    printf("\033[31mFunction %s called on line %d is not defined!\n\033[0m", name, line);
+    error_code = 1;
     return -1;
 }
 
@@ -395,7 +405,8 @@ short check_method_defined(FunctionList *funcTable, char *methodName, char *objN
         }
     }
 
-    printf("Method %s.%s called on line %d is not defined!\n", objName, methodName, line);
+    printf("\033[31mMethod %s.%s called on line %d is not defined!\n\033[0m", objName, methodName, line);
+    error_code = 1;
     return -1;
 }
 
@@ -514,15 +525,16 @@ short check_AstTypes(struct AstNode *Ast, int line)
         return precTypes[0];
     }
 
-    printf("The expression from line %d has operands with different types.\n", line);
+    printf("\033[31mThe expression from line %d has operands with different types.\n", line);
     printf("    Following types of operands are used in this expression: ");
+    error_code = 1;
     for(int i = 0; i < precLen; ++i) {
         if(precTypes[i] < 0) {
             continue;
         }
-        printf("%s", decodeType[precTypes[i]]);
+        printf("\033[31m%s\033[0m", decodeType[precTypes[i]]);
         if(i < precLen - 1) {
-            printf(", ");
+            printf("\033[31m, \033[0m");
         }
         else {
             printf("\n");
@@ -672,7 +684,7 @@ void update_var(char *name, char *scope, int newVal)
 
 int computeAst(struct AstNode *nod, char *scope, int line)
 {
-    printf("%s\n", nod->nodeInfo.value);
+    // printf("%s\n", nod->nodeInfo.value);
     
     if(!nod) {
         // just in case but in shouldn't happen
@@ -762,8 +774,9 @@ void check_and_update_variable(char *varName, int varType, char *scope, struct A
     }
 
     if(varType != expType) {
-        printf("The left side of the assignment on line %d has a different type than the right side!\n", line);
-        printf("    The type of left side is '%s' while the type of right side is '%s'\n", decodeType[varType], decodeType[expType]);
+        printf("\033[31mThe left side of the assignment on line %d has a different type than the right side!\n", line);
+        printf("    The type of left side is '%s' while the type of right side is '%s'\n\033[0m", decodeType[varType], decodeType[expType]);
+        error_code = 1;
         return;
     }
 
@@ -820,8 +833,9 @@ void match_arguments(char *funcName, int *arg_types, int argNr, VariableList *pa
     }
 
     if(argNr != paramNr) {
-        printf("Incorrect %s call at line %d.\n", func_or_method, line);
-        printf("    The %s %s has %d parameters, while %d arguments has been passed.\n", func_or_method, funcName, paramNr, argNr);
+        printf("\033[31mIncorrect %s call at line %d.\n", func_or_method, line);
+        printf("    The %s %s has %d parameters, while %d arguments has been passed.\n\033[0m", func_or_method, funcName, paramNr, argNr);
+        error_code = 1;
         return;
     }
 
@@ -839,10 +853,11 @@ void match_arguments(char *funcName, int *arg_types, int argNr, VariableList *pa
         return;
     }
 
-    printf("Incorrect %s %s call at line %d. The types of the following arguments and parameters doesn't match:\n", func_or_method, funcName, line);
+    printf("\033[31mIncorrect %s %s call at line %d. The types of the following arguments and parameters doesn't match:\n\033[0m", func_or_method, funcName, line);
+    error_code = 1;
     for(int i = 0; i < paramNr; ++i) {
         if(parameters->variables[i].typeInfo.typeName != arg_types[i] && arg_types[i] != -1) {
-            printf("    Argument %d is having the type '%s', while type '%s' is expected.\n", 
+            printf("\033[31m    Argument %d is having the type '%s', while type '%s' is expected.\n\033[0m", 
                         i + 1, decodeType[arg_types[i]], decodeType[parameters->variables[i].typeInfo.typeName]);
         }
     }

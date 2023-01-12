@@ -4,12 +4,15 @@ class PetriAlex {
         return 2;
     }
 }
+function int gg(int x)
+{
+    return x + 1;
+}
 begin
     int b = 11;
     char d = '8';
-    
+    int q =gg(gg(b));
     array int[4] x = {11,2,3,4};
-    array char[5] q = {'a', 'b', 'c'};
     Eval(x[0]);
     PetriAlex.a = 2;
     int c = PetriAlex.a + 4;
