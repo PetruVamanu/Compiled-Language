@@ -256,7 +256,7 @@ array_var : ID {
 
 array_content : atomic_value {
                 if(arrayInitPos >= currentVariable.typeInfo.arrayLen) {
-                  printf("\033[31mArray length excedeed when initializing on line %d. Array Length is %d, while initialization list length is %d.\n\033[0m", 
+                  printf("\033[31mArray length excedeed when initializing on line %d. Array Length is %d, while initialization list length is %d. \n \033[0m", 
                   yylineno, currentVariable.typeInfo.arrayLen, arrayInitPos + 1);
                   error_code = 1;
                 }
@@ -571,6 +571,7 @@ func_arguments : expression_value {
                      funcArgTypes[myStack[stackCount]++] = type;
                   }
                } ',' func_arguments
+               |
  
 function_call : ID {
                   stackCount++;
