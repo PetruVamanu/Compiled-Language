@@ -1,0 +1,88 @@
+int x ;
+int x1;
+int x2;
+int y;
+array int[10] arr;
+boolean myBool = false;
+array real[15] v1, v2;
+real f = 20.0 ;
+real f1;
+string  titlu = "proiectLFAC";
+char Litera = 'G';
+
+function int testFunction(int x, real z) {
+    x = x + 2;
+    return x * x;
+}
+
+function int testFunction(int x, int z) {
+    return z - x;
+}
+
+function int test(int param1, int param2, real f) {
+    if(param1 > param2)
+    {
+        param1 = param2 + 1;
+    }
+    return param1;
+}
+
+class C1 {
+    int x, q;
+    real avg;
+    function void do(){
+        x = x - q;
+    };
+}
+
+class C2 {
+    string nume = "Popescu";
+    string prenume = "Andrei";
+}
+
+
+begin
+    x = 7;
+    x1 = x1 * 2;
+    f = 30.0 ; 
+    v1[0] = 1.9;
+    myBool = true;
+    titlu = "Proiect Lfac";
+    Litera = 'q';
+
+    if(x > 0)
+    {
+        int xq = 0;
+        for(int i = 0; i < 10; i = i + 1)
+        {
+            xq = xq * (xq + 1) + 1;
+        }
+
+        while(xq != 0)
+        {
+            v1[0] = v1[0] * 0.99;
+            xq = xq / 2;
+        }
+    }
+
+    x = 10; x1 = 20; x2 = 30; y = 100;
+
+    if (x1 + test(x1,x2,f) < 5 + x1 && ((x > 2 || x1 < 4+x2) || x == 2)) {
+	   x = 2;
+       Eval(x1 * x2 / x1);
+    }
+
+
+    x = test(test(x1,3,f)+2, y+4) + (30 - y * arr[2]) - 10;
+    x1 = x*100 + 5 * 100 + arr[2];
+    Eval(x*10-100);
+    Eval(x1);
+    Eval(x2* 10-200) ;
+    Eval(x+ test(x1,x,f)) ; 	
+    TypeOf(x+23);
+    TypeOf(f-30.0);
+
+end
+
+
+

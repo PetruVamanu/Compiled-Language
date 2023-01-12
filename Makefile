@@ -8,3 +8,10 @@ compile:
 
 run:
 	./ex test.txt
+
+
+good:
+	./ex good.txt
+
+bad:
+	./ex bad.txt

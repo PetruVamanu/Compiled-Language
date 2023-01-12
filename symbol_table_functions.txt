@@ -1,7 +1,12 @@
 The following functions where defined in the program:
-1) Name: f, Return Type: void, Scope: /, Line: 1, Parameters: 
-    1.1) Name: a, State: Mutable, Structure: Simple, Type: int
-    1.2) Name: b, State: Mutable, Structure: Simple, Type: int
-2) Name: f, Return Type: void, Scope: /, Line: 5, Parameters: 
-    2.1) Name: a, State: Mutable, Structure: Simple, Type: int
-    2.2) Name: b, State: Mutable, Structure: Simple, Type: real
+1) Name: testFunction, Return Type: int, Scope: /, Line: 13, Parameters: 
+    1.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    1.2) Name: z, State: Mutable, Structure: Simple, Type: real
+2) Name: testFunction, Return Type: int, Scope: /, Line: 18, Parameters: 
+    2.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    2.2) Name: z, State: Mutable, Structure: Simple, Type: int
+3) Name: test, Return Type: int, Scope: /, Line: 22, Parameters: 
+    3.1) Name: param1, State: Mutable, Structure: Simple, Type: int
+    3.2) Name: param2, State: Mutable, Structure: Simple, Type: int
+    3.3) Name: f, State: Mutable, Structure: Simple, Type: real
+4) Name: do, Return Type: void, Scope: /&C1/, Line: 33, Parameters: 
