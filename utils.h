@@ -3,6 +3,8 @@
 
 char *concatenate_and_free(char *s1, char *s2) {
     char *result;
+    if(s1 == NULL)
+        return s2;
     int len1 = strlen(s1);
     int len2 = strlen(s2);
 
@@ -20,7 +22,8 @@ char *concatenate_and_free(char *s1, char *s2) {
 
     return result;
 }
-char * final_result;
+short error_code = 0;
+char * final_result = NULL;
 struct AstNode *init_Ast(short _nodeType, short _dataType, char *_value) 
 {
     struct AstNode *Ast = (struct AstNode *) malloc(sizeof(struct AstNode));

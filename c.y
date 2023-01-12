@@ -40,7 +40,12 @@
 
 %%
 
-s : declaratii main { printf("cod sintactic corect! ;) \n"); }
+s : declaratii main { 
+   if(!error_code)
+   {
+      printf("cod sintactic corect! ;) \n");  if(final_result){printf("\033[32m%s\033[0m\n", final_result); free(final_result);}
+   }
+}
   ;
 
 declaratii : declaratii declarare
@@ -240,6 +245,7 @@ array_content : atomic_value {
                   
                   if($1->dataType != currentVariable.typeInfo.typeName){
                      printf("Array initialized with different type on line %d.\n", yylineno);
+                     error_code = 1;
                   }
 
                   if($1->nodeType == 2 && $1->dataType == 0) {
@@ -514,7 +520,10 @@ typeof_call : TYPEOF '(' expression_value ')' {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
    int type = check_AstTypes($3, yylineno);
    if(type != -1) {
-      printf("The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
+      printf("~The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
+      char *p = (char*)malloc(1000* sizeof(char));
+      sprintf(p, "The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
+      final_result = concatenate_and_free(final_result, p);
    }
 }
 
@@ -522,7 +531,10 @@ eval_call : EVAL '(' expression_value ')' {
    int type = check_AstTypes($3, yylineno);
    if(type != -1) {
       int result = computeAst($3, currentScope, yylineno);
-      printf("The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
+      printf("~The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
+      char *p = (char*)malloc(1000* sizeof(char));
+      sprintf(p, "The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
+      final_result = concatenate_and_free(final_result, p);
    }
 }
 
