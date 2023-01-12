@@ -14,3 +14,4 @@ The following variables where declared in the program:
 13. Name: Litera, State: Mutable, Structure: Simple, Type: char, Line: 11, Scope: /
 14. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 59, Scope: /~/if_2/
 15. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 60, Scope: /~/if_2/for_1/
+16. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 79, Scope: /~/

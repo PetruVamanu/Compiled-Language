@@ -76,6 +76,8 @@ begin
        Eval(x1 * x2 / x1);
     }
 
+    array int[20] xArr= {9,8,2,3,4};
+    Eval(xArr[1]); 
 
     x = test(test(x1,3,f)+2, y+4 , f) + (30 - y * arr[2]) - 10;
     x1 = x*100 + 5 * 100 + arr[2];
