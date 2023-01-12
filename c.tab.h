@@ -71,18 +71,19 @@ extern int yydebug;
     TYPEOF = 277,
     EVAL = 278,
     CHAR = 279,
-    ID = 280,
-    EQ = 281,
-    NEQ = 282,
-    LEQ = 283,
-    GEQ = 284,
-    OR = 285,
-    AND = 286,
-    LT = 287,
-    GT = 288,
-    C_CHAR = 289,
-    C_STRING = 290,
-    C_INT = 291
+    MCALL = 280,
+    ID = 281,
+    EQ = 282,
+    NEQ = 283,
+    LEQ = 284,
+    GEQ = 285,
+    OR = 286,
+    AND = 287,
+    LT = 288,
+    GT = 289,
+    C_CHAR = 290,
+    C_STRING = 291,
+    C_INT = 292
   };
 #endif
 
@@ -97,7 +98,7 @@ union YYSTYPE
     struct AstNode *astNode;
     struct NodeInfo *nodeVal;
 
-#line 101 "c.tab.h"
+#line 102 "c.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

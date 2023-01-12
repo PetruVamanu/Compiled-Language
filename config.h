@@ -17,6 +17,9 @@ char currentScope[MAX_SCOPE_LEN];
 
 int arrayInitPos = 0;
 
+int inObj = 0;
+char objName[MAX_VAR_LEN];
+
 int nrArgs;
 int funcArgTypes[MAX_ARGS_NR];
 

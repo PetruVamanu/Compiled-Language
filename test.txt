@@ -1,17 +1,18 @@
-function void f(int a, int b) {
-    return 2;
+class PetriAlex {
+    int a;
+    function int f(int a) {
+        return 2;
+    }
 }
-
-function void f(int a, real b) {
-    return 5;
-}
-
 begin
-    int c = 2;
     int b = 11;
     char d = '8';
-    TypeOf(c + b);
-    array int[4] x = {1.1,2,3,4};
+    
+    array int[4] x = {11,2,3,4};
     array char[5] q = {'a', 'b', 'c'};
     Eval(x[0]);
+    PetriAlex.a = 2;
+    int c = PetriAlex.a + 4;
+    Eval(c);
+    c = PetriAlex->f(2);
 end

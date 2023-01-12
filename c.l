@@ -24,9 +24,13 @@
 "void" {return VOID;}
 "return" {return RET;}
 "end" {return ENDP;}
+
 "==" {
     yylval.strval = strdup(yytext); 
     return EQ;
+}
+"->" {
+    return MCALL;
 }
 "!=" {
     yylval.strval = strdup(yytext);
@@ -44,6 +48,7 @@
     yylval.strval = strdup(yytext);
     return GT;
 }
+
 ">=" {
     yylval.strval = strdup(yytext);
     return GEQ;
