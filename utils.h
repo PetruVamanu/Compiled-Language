@@ -67,7 +67,6 @@ void insert_var(VariableList *varTable, Variable *newVar)
     
     strncpy(varTable->variables[varNum].name, newVar->name, MAX_VAR_LEN);
     strncpy(varTable->variables[varNum].scope, newVar->scope, MAX_SCOPE_LEN);
-    strncpy(varTable->variables[varNum].value, newVar->value, MAX_ARRAY_LEN);
     
     varTable->variables[varNum].line = newVar->line;
     varTable->variables[varNum].typeInfo.typeName = newVar->typeInfo.typeName;
@@ -79,6 +78,10 @@ void insert_var(VariableList *varTable, Variable *newVar)
     if(arrayLen >= MAX_ARRAY_LEN) {
         printf("Array length limit is excedeed!");
         return;
+    }s
+
+    for(int i = 0; i < arrayLen; ++i) {
+        varTable->variables[varNum].value[i] = newVar->value[i];
     }
 
     varTable->variables[varNum].typeInfo.arrayLen = arrayLen;      

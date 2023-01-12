@@ -5,18 +5,8 @@ class PetriAlex {
     }
 }
 begin
-<<<<<<< HEAD
     PetriAlex.a = 2;
     int c = PetriAlex.a + 4;
     Eval(c);
     int c = PetriAlex->f(2, 4);
-=======
-    int c = 2;
-    int b = 11;
-    char d = '8';
-    TypeOf(c + b);
-    array int[4] x = {11,2,3,4};
-    array char[5] q = {'a', 'b', 'c'};
-    Eval(x[0]);
->>>>>>> c94266f12a66db275b0daec73500ee394cd9212f
 end

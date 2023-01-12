@@ -24,6 +24,7 @@
 "void" {return VOID;}
 "return" {return RET;}
 "end" {return ENDP;}
+
 "==" {
     yylval.strval = strdup(yytext); 
     return EQ;

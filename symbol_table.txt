@@ -1,11 +1,3 @@
 The following variables where declared in the program:
-<<<<<<< HEAD
 1. Name: a, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /&PetriAlex/
 2. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 9, Scope: /~/, Value: 0
-=======
-1. Name: c, State: Mutable, Structure: Simple, Type: int, Line: 10, Scope: /~/, Value: 2
-2. Name: b, State: Mutable, Structure: Simple, Type: int, Line: 11, Scope: /~/, Value: 11
-3. Name: d, State: Mutable, Structure: Simple, Type: char, Line: 12, Scope: /~/
-4. Name: x, State: Mutable, Structure: Array of 4 elements, Type: int, Line: 14, Scope: /~/
-5. Name: q, State: Mutable, Structure: Array of 5 elements, Type: char, Line: 15, Scope: /~/
->>>>>>> c94266f12a66db275b0daec73500ee394cd9212f
