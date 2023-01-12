@@ -786,26 +786,73 @@ void check_and_update_variable(VariableList *varTable, char *varName, int varTyp
     update_var(varTable, varName, scope, astResult);
 }
 
+ short check_const_param(FunctionList *funcTable, char *name, char *scope) 
+ {
+    int funcNum = funcTable->funcNumber;
+    for(int i = 0; i < funcNum; ++i) {
+    int parNum = funcTable->functions[i].parameters.varNumber;
+    for(int j = 0; j < parNum; ++j) {
+        if(!strcmp(funcTable->functions[i].parameters.variables[j].name, name)) {
+            if(strstr(scope, funcTable->functions[i].name)) {
+                    // if the name of the function is contained in the variable scope -> variable might be a parameter
+                    if(funcTable->functions[i].parameters.variables[j].typeInfo.isConst) {
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+ }
+
+short check_const_var(VariableList *varTable, char *name, char *scope)
+{
+    int varNum = varTable->varNumber, deepestScope = 0, pos = -1;
+    for(int i = 0; i < varNum; ++i) {
+        if(!strcmp(name, varTable->variables[i].name) && strstr(scope, varTable->variables[i].scope)) {
+            int scopeLen = strlen(varTable->variables[i].scope);
+            if(deepestScope < scopeLen) {
+                deepestScope = scopeLen;
+                pos = i;
+            }
+        }
+    }
+    if(pos == -1) {
+        return 0;
+    }
+    return varTable->variables[pos].typeInfo.isConst;
+}
+
 void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, short paramFlag) 
 {
     int varType;
+    short isConst;
 
     if(paramFlag) {
         if(!isClass) {
+            isConst = check_const_param(&allFunctions, varName, scope);
             varType = extract_param_type(&allFunctions, varName, scope);
         }
         else {
+            isConst = check_const_param(&classFunctions, varName, scope);
             varType = extract_param_type(&classFunctions, varName, scope);
         }
     }
     else { 
         if(!isClass) {
+            isConst = check_const_var(&allVariables, varName, scope);
             varType = extract_variable_type(&allVariables, varName, scope);   
         }
         else {
+            isConst = check_const_var(&classVariables, varName, scope);
             varType = extract_variable_type(&classVariables, varName, scope);   
         }
     }
+    if(isConst) {
+        printf("The variable %s on line %d is a constant and can't be reassigned.\n", varName, line);
+        return;
+    }
+
     if(!isClass) {
         check_and_update_variable(&allVariables, varName, varType, scope, Ast, line);   
     }

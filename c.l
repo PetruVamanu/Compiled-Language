@@ -69,12 +69,12 @@
     return ID;
 }
 
-0|[1-9][0-9]* {
+-?(0|[1-9][0-9]*) {
     yylval.intval = atoi(yytext); 
     return C_INT; 
 }
 
-(0|[1-9][0-9]*)\.[0-9]+ {return C_FLOAT;}
+-?((0|[1-9][0-9]*)\.[0-9]+) {return C_FLOAT;}
 \"[?!,.;" "a-zA-Z0-9]*\" {
     yylval.strval = strdup(yytext); 
     return C_STRING;

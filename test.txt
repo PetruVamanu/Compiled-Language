@@ -1,6 +1,7 @@
-function int f(int a, int b) {
-    a = 2;
-}
 begin
-
+    const int a = -2;
+    a = 5;
+    array const int[35] f;
+    f[2] = 0;
+    Eval(a);
 end

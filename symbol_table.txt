@@ -1,0 +1,3 @@
+The following variables where declared in the program:
+1. Name: a, State: Constant, Structure: Simple, Type: int, Line: 2, Scope: /~/, Value: -2
+2. Name: f, State: Constant, Structure: Array of 35 elements, Type: int, Line: 4, Scope: /~/
