@@ -77,8 +77,8 @@ begin
     x1 = x*100 + 5 * 100 + arr[2];
     Eval(x*10-100);
     Eval(x1);
-    Eval(x2* 10-200) ;
-    Eval(x+ test(x1,x,f)) ; 	
+    Eval(x2*10-200) ;
+    Eval(x+test(x1,x,f)) ; 	
     TypeOf(x+23);
     TypeOf(f-30.0);
 

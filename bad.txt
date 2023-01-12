@@ -27,7 +27,7 @@ function int test(int param) {
 begin
     x3 = x + 2;
 	f1 = x + x2; 
-	f1 = test (5) + x;
+	f1 = test(5) + x;
     x = test(5) + f1;
 	x = s + f1;
     test(f1); 
