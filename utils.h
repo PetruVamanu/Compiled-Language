@@ -736,7 +736,8 @@ int computeAst(struct AstNode *nod, char *scope, int line)
     if(!strcmp(op, "/")) {
         int right = computeAst(nod->right, scope, line);
         if(right == 0) {
-            printf("Division by 0 on line %d\n", line);
+            printf("\033[31mDivision by 0 on line %d\n\033[0m", line);
+            error_code = 1;
             return 0;
         }
         return computeAst(nod->left, scope, line) / computeAst(nod->right, scope, line);
@@ -849,7 +850,8 @@ void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, sh
         }
     }
     if(isConst) {
-        printf("The variable %s on line %d is a constant and can't be reassigned.\n", varName, line);
+        printf("\033[31mThe variable %s on line %d is a constant and can't be reassigned.\n\033[0m", varName, line);
+        error_code = 1;
         return;
     }
 

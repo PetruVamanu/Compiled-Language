@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-The following variables where declared in the program:
-1. Name: a, State: Constant, Structure: Simple, Type: int, Line: 2, Scope: /~/, Value: -2
-2. Name: f, State: Constant, Structure: Array of 35 elements, Type: int, Line: 4, Scope: /~/
-=======
-<<<<<<< HEAD
 The following variables where declared in the program:
 1. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 1, Scope: /, Value: 20
 2. Name: x1, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /, Value: 2500
@@ -18,9 +12,6 @@ The following variables where declared in the program:
 11. Name: f1, State: Mutable, Structure: Simple, Type: real, Line: 9, Scope: /
 12. Name: titlu, State: Mutable, Structure: Simple, Type: string, Line: 10, Scope: /
 13. Name: Litera, State: Mutable, Structure: Simple, Type: char, Line: 11, Scope: /
-14. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 59, Scope: /~/if_2/
-15. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 60, Scope: /~/if_2/for_1/
-16. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 79, Scope: /~/
-=======
->>>>>>> 9e7625d7152e6e8381f613522d7ce785ff417c44
->>>>>>> 8f67198260abc0c845165c626acda643aa874cc2
+14. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 60, Scope: /~/if_2/
+15. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 61, Scope: /~/if_2/for_1/
+16. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 80, Scope: /~/

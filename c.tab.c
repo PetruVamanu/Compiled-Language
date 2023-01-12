@@ -565,11 +565,11 @@ static const yytype_int16 yyrline[] =
      316,   343,   349,   356,   363,   370,   377,   384,   423,   430,
      436,   444,   455,   459,   463,   467,   471,   475,   479,   483,
      487,   491,   495,   499,   503,   506,   511,   536,   545,   554,
-     565,   565,   568,   569,   570,   571,   572,   573,   574,   575,
-     576,   577,   578,   579,   580,   583,   594,   594,   606,   608,
-     608,   640,   640,   652,   663,   674,   675,   679,   678,   691,
-     692,   693,   694,   697,   698,   701,   702,   706,   705,   719,
-     726,   718,   733,   732,   743,   746
+     566,   566,   569,   570,   571,   572,   573,   574,   575,   576,
+     577,   578,   579,   580,   581,   584,   595,   595,   607,   609,
+     609,   641,   641,   653,   664,   675,   676,   680,   679,   692,
+     693,   694,   695,   698,   699,   702,   703,   707,   706,   720,
+     727,   719,   734,   733,   744,   747
 };
 #endif
 
@@ -2274,6 +2274,7 @@ yyreduce:
 #line 554 "c.y"
                         {
    if(!checkClass((yyvsp[-1].strval))) {
+      error_code = 1;
       printf("The class %s used to initialize object %s on line %d has not been defined\n", (yyvsp[-1].strval), (yyvsp[0].strval), yylineno);
    }
    else {
@@ -2282,23 +2283,23 @@ yyreduce:
       remove_from_scope();
    }
 }
-#line 2286 "c.tab.c"
+#line 2287 "c.tab.c"
     break;
 
   case 80:
-#line 565 "c.y"
+#line 566 "c.y"
               {add_scope("~", 0);}
-#line 2292 "c.tab.c"
+#line 2293 "c.tab.c"
     break;
 
   case 81:
-#line 565 "c.y"
+#line 566 "c.y"
                                                    {remove_from_scope();}
-#line 2298 "c.tab.c"
+#line 2299 "c.tab.c"
     break;
 
   case 95:
-#line 583 "c.y"
+#line 584 "c.y"
                                   {
                   if(myStack[stackCount] >= MAX_ARGS_NR) {
                      printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
@@ -2310,11 +2311,11 @@ yyreduce:
                      funcArgTypes[myStack[stackCount]++] = type;
                   }
                }
-#line 2314 "c.tab.c"
+#line 2315 "c.tab.c"
     break;
 
   case 96:
-#line 594 "c.y"
+#line 595 "c.y"
                                   {
                   if(myStack[stackCount] >= MAX_ARGS_NR) {
                      printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
@@ -2327,21 +2328,21 @@ yyreduce:
                      funcArgTypes[myStack[stackCount]++] = type;
                   }
                }
-#line 2331 "c.tab.c"
+#line 2332 "c.tab.c"
     break;
 
   case 99:
-#line 608 "c.y"
+#line 609 "c.y"
                    {
                   stackCount++;
                   // myStack[stackCount] = 0;
                   myStack[stackCount] = 0;
               }
-#line 2341 "c.tab.c"
+#line 2342 "c.tab.c"
     break;
 
   case 100:
-#line 614 "c.y"
+#line 615 "c.y"
               {
                   (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                   if(!inObj) {
@@ -2366,31 +2367,31 @@ yyreduce:
                   }
                   stackCount--;
               }
-#line 2370 "c.tab.c"
+#line 2371 "c.tab.c"
     break;
 
   case 101:
-#line 640 "c.y"
+#line 641 "c.y"
                              {
                      inObj = 1;
                      strncpy(objName, (yyvsp[-1].strval), MAX_VAR_LEN); 
                   }
-#line 2379 "c.tab.c"
+#line 2380 "c.tab.c"
     break;
 
   case 102:
-#line 645 "c.y"
+#line 646 "c.y"
                   {
                      (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                      (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
                      strncpy((yyval.nodeVal)->value, "method", MAX_VAR_LEN);
                      inObj = 0;
                   }
-#line 2390 "c.tab.c"
+#line 2391 "c.tab.c"
     break;
 
   case 103:
-#line 652 "c.y"
+#line 653 "c.y"
                                               {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
@@ -2401,11 +2402,11 @@ yyreduce:
       final_result = concatenate_and_free(final_result, p);
    }
 }
-#line 2405 "c.tab.c"
+#line 2406 "c.tab.c"
     break;
 
   case 104:
-#line 663 "c.y"
+#line 664 "c.y"
                                           {
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
    if(type != -1) {
@@ -2416,87 +2417,87 @@ yyreduce:
       final_result = concatenate_and_free(final_result, p);
    }
 }
-#line 2420 "c.tab.c"
+#line 2421 "c.tab.c"
     break;
 
   case 107:
-#line 679 "c.y"
+#line 680 "c.y"
          {
             forCounter++; 
             char newScope[MAX_VAR_LEN];
             snprintf(newScope, MAX_VAR_LEN, "for_%d", forCounter);
             add_scope(newScope, 0);
          }
-#line 2431 "c.tab.c"
+#line 2432 "c.tab.c"
     break;
 
   case 108:
-#line 686 "c.y"
+#line 687 "c.y"
          {
             remove_from_scope();
          }
-#line 2439 "c.tab.c"
+#line 2440 "c.tab.c"
     break;
 
   case 117:
-#line 706 "c.y"
+#line 707 "c.y"
             {
               whileCounter++; 
               char newScope[MAX_VAR_LEN];
               snprintf(newScope, MAX_VAR_LEN, "while_%d", whileCounter);
               add_scope(newScope, 0);
             }
-#line 2450 "c.tab.c"
+#line 2451 "c.tab.c"
     break;
 
   case 118:
-#line 713 "c.y"
+#line 714 "c.y"
             {
               remove_from_scope();
             }
-#line 2458 "c.tab.c"
+#line 2459 "c.tab.c"
     break;
 
   case 119:
-#line 719 "c.y"
+#line 720 "c.y"
              {
                 ifCounter++; 
                 char newScope[MAX_VAR_LEN];
                 snprintf(newScope, MAX_VAR_LEN, "if_%d", ifCounter);
                 add_scope(newScope, 0);
              }
-#line 2469 "c.tab.c"
+#line 2470 "c.tab.c"
     break;
 
   case 120:
-#line 726 "c.y"
+#line 727 "c.y"
              {
               remove_from_scope();
              }
-#line 2477 "c.tab.c"
+#line 2478 "c.tab.c"
     break;
 
   case 122:
-#line 733 "c.y"
+#line 734 "c.y"
                {
                   elseCounter++; 
                   char newScope[MAX_VAR_LEN];
                   snprintf(newScope, MAX_VAR_LEN, "else_%d", elseCounter);
                   add_scope(newScope, 0);
                }
-#line 2488 "c.tab.c"
+#line 2489 "c.tab.c"
     break;
 
   case 123:
-#line 740 "c.y"
+#line 741 "c.y"
                {
                   remove_from_scope();
                }
-#line 2496 "c.tab.c"
+#line 2497 "c.tab.c"
     break;
 
 
-#line 2500 "c.tab.c"
+#line 2501 "c.tab.c"
 
       default: break;
     }
@@ -2728,12 +2729,13 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 748 "c.y"
+#line 749 "c.y"
 
 
 void yyerror(char *s)
 {
   printf("eroare: %s la linia:%d\n", s, yylineno);
+  error_code = 1;
 }
 
 int main(int argc, char** argv)
