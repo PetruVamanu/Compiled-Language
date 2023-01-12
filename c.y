@@ -553,6 +553,7 @@ array_assignment : ID '[' C_INT ']' '=' expression_value
 
 object_init : '&' ID ID {
    if(!checkClass($2)) {
+      error_code = 1;
       printf("The class %s used to initialize object %s on line %d has not been defined\n", $2, $3, yylineno);
    }
    else {
@@ -750,6 +751,7 @@ return_statement : RET expression_value
 void yyerror(char *s)
 {
   printf("eroare: %s la linia:%d\n", s, yylineno);
+  error_code = 1;
 }
 
 int main(int argc, char** argv)
