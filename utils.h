@@ -152,6 +152,7 @@ void remove_from_scope()
     
 void create_symbol_table() 
 {
+    if(error_code) return;
     FILE *F = fopen(symb_table_path, "w");
     if(!F) {
         fprintf(stderr, "Error at opening symbol_table_path!");
@@ -194,6 +195,7 @@ void create_symbol_table()
 
 void create_function_table() 
 {
+    if(error_code) return;
     FILE *F = fopen(func_table_path, "w");
     if(!F) {
         fprintf(stderr, "Error at opening func_table_path!");

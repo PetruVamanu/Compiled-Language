@@ -1,6 +1,20 @@
 The following variables where declared in the program:
-1. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 1, Scope: /, Value: 23
-2. Name: x1, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /, Value: 0
-3. Name: x2, State: Mutable, Structure: Simple, Type: int, Line: 5, Scope: /, Value: 0
-4. Name: f1, State: Mutable, Structure: Simple, Type: real, Line: 6, Scope: /
-5. Name: s, State: Mutable, Structure: Simple, Type: string, Line: 7, Scope: /
+1. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 1, Scope: /, Value: 20
+2. Name: x1, State: Mutable, Structure: Simple, Type: int, Line: 2, Scope: /, Value: 2500
+3. Name: x2, State: Mutable, Structure: Simple, Type: int, Line: 3, Scope: /, Value: 30
+4. Name: y, State: Mutable, Structure: Simple, Type: int, Line: 4, Scope: /, Value: 100
+5. Name: arr, State: Mutable, Structure: Array of 10 elements, Type: int, Line: 5, Scope: /
+6. Name: myBool, State: Mutable, Structure: Simple, Type: boolean, Line: 6, Scope: /
+7. Name: v1, State: Mutable, Structure: Array of 15 elements, Type: real, Line: 7, Scope: /
+8. Name: v2, State: Mutable, Structure: Array of 15 elements, Type: real, Line: 7, Scope: /
+9. Name: f, State: Mutable, Structure: Simple, Type: real, Line: 8, Scope: /
+10. Name: f1, State: Mutable, Structure: Simple, Type: real, Line: 9, Scope: /
+11. Name: titlu, State: Mutable, Structure: Simple, Type: string, Line: 10, Scope: /
+12. Name: Litera, State: Mutable, Structure: Simple, Type: char, Line: 11, Scope: /
+13. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 31, Scope: /&C1/
+14. Name: q, State: Mutable, Structure: Simple, Type: int, Line: 31, Scope: /&C1/
+15. Name: avg, State: Mutable, Structure: Simple, Type: real, Line: 32, Scope: /&C1/
+16. Name: nume, State: Mutable, Structure: Simple, Type: string, Line: 39, Scope: /&C2/
+17. Name: prenume, State: Mutable, Structure: Simple, Type: string, Line: 40, Scope: /&C2/
+18. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 55, Scope: /~/if_2/
+19. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 56, Scope: /~/if_2/for_1/

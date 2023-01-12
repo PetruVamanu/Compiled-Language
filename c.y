@@ -43,6 +43,9 @@
 s : declaratii main { 
    if(!error_code)
    {
+
+      create_symbol_table();
+      create_function_table();
       printf("cod sintactic corect! ;) \n");  if(final_result){printf("\033[32m%s\033[0m\n", final_result); free(final_result);}
    }
 }
@@ -670,8 +673,6 @@ int main(int argc, char** argv)
 
   yyparse();
 
-  create_symbol_table();
-  create_function_table();
 
   clear_varList(&allVariables);
   clear_funcList(&allFunctions);
