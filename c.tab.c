@@ -562,14 +562,14 @@ static const yytype_int16 yyrline[] =
      100,   138,   141,   141,   144,   147,   156,   175,   178,   184,
      184,   200,   201,   202,   206,   205,   212,   211,   221,   222,
      225,   239,   239,   257,   279,   279,   298,   299,   302,   317,
-     316,   343,   349,   356,   363,   370,   377,   384,   402,   409,
-     415,   423,   434,   438,   442,   446,   450,   454,   458,   462,
-     466,   470,   474,   478,   482,   485,   490,   504,   513,   522,
-     533,   533,   536,   537,   538,   539,   540,   541,   542,   543,
-     544,   545,   546,   547,   548,   551,   562,   562,   574,   576,
-     576,   609,   609,   621,   632,   643,   644,   648,   647,   660,
-     661,   662,   663,   666,   667,   670,   671,   675,   674,   688,
-     695,   687,   702,   701,   712,   715
+     316,   343,   349,   356,   363,   370,   377,   384,   423,   430,
+     436,   444,   455,   459,   463,   467,   471,   475,   479,   483,
+     487,   491,   495,   499,   503,   506,   511,   536,   545,   554,
+     565,   565,   568,   569,   570,   571,   572,   573,   574,   575,
+     576,   577,   578,   579,   580,   583,   594,   594,   606,   608,
+     608,   640,   640,   652,   663,   674,   675,   679,   678,   691,
+     692,   693,   694,   697,   698,   701,   702,   706,   705,   719,
+     726,   718,   733,   732,   743,   746
 };
 #endif
 
@@ -2024,48 +2024,69 @@ yyreduce:
 #line 385 "c.y"
              {
                 int parameter = 1;
-                int ret = check_var_parameter(&allFunctions, (yyvsp[0].strval), currentScope);
+                int ret;
+                if(!isClass) {
+                  ret = check_var_parameter(&allFunctions, (yyvsp[0].strval), currentScope);
+                }
+                else {
+                  ret = check_var_parameter(&classFunctions, (yyvsp[0].strval), currentScope);
+                }
                 if(ret) {
                   parameter = 0;
-                  ret = check_var_defined(&allVariables, (yyvsp[0].strval), currentScope, yylineno);
+                  if(!isClass) {
+                     ret = check_var_defined(&allVariables, (yyvsp[0].strval), currentScope, yylineno);
+                  }
+                  else {
+                     ret = check_var_defined(&classVariables, (yyvsp[0].strval), currentScope, yylineno);
+                  }
                 }
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 (yyval.nodeVal)->nodeType = 1;
                 if(parameter) {
-                  (yyval.nodeVal)->dataType = extract_param_type(&allFunctions, (yyvsp[0].strval), currentScope);
+                  if(!isClass) {
+                     (yyval.nodeVal)->dataType = extract_param_type(&allFunctions, (yyvsp[0].strval), currentScope);
+                  }
+                  else {
+                     (yyval.nodeVal)->dataType = extract_param_type(&classFunctions, (yyvsp[0].strval), currentScope);
+                  }
                 }
                 else {
-                  (yyval.nodeVal)->dataType = extract_variable_type(&allVariables, (yyvsp[0].strval), currentScope);
+                  if(!isClass) {
+                     (yyval.nodeVal)->dataType = extract_variable_type(&allVariables, (yyvsp[0].strval), currentScope);
+                  }
+                  else {
+                     (yyval.nodeVal)->dataType = extract_variable_type(&classVariables, (yyvsp[0].strval), currentScope);                     
+                  }
                 }
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].strval));
              }
-#line 2043 "c.tab.c"
+#line 2064 "c.tab.c"
     break;
 
   case 58:
-#line 403 "c.y"
+#line 424 "c.y"
              {
                 (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                 (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
                 snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].nodeVal)->value);
              }
-#line 2054 "c.tab.c"
+#line 2075 "c.tab.c"
     break;
 
   case 59:
-#line 409 "c.y"
+#line 430 "c.y"
                                  {
                   (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                   (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                   (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
                   snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s", (yyvsp[0].nodeVal)->value);
                }
-#line 2065 "c.tab.c"
+#line 2086 "c.tab.c"
     break;
 
   case 60:
-#line 416 "c.y"
+#line 437 "c.y"
              {
                check_class_var(&allVariables, (yyvsp[0].strval), (yyvsp[-2].strval), yylineno);
                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
@@ -2073,11 +2094,11 @@ yyreduce:
                (yyval.nodeVal)->dataType = extract_class_varType(&allVariables, (yyvsp[0].strval), (yyvsp[-2].strval));
                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s.%s", (yyvsp[-2].strval), (yyvsp[0].strval));
              }
-#line 2077 "c.tab.c"
+#line 2098 "c.tab.c"
     break;
 
   case 61:
-#line 424 "c.y"
+#line 445 "c.y"
              {
                check_array_defined(&allVariables, (yyvsp[-3].strval), currentScope, (yyvsp[-1].intval), yylineno);
                (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
@@ -2085,161 +2106,172 @@ yyreduce:
                (yyval.nodeVal)->dataType = extract_variable_type(&allVariables, (yyvsp[-3].strval), currentScope);
                snprintf((yyval.nodeVal)->value, MAX_VAR_LEN, "%s[%d]", (yyvsp[-3].strval), (yyvsp[-1].intval));
              }
-#line 2089 "c.tab.c"
+#line 2110 "c.tab.c"
     break;
 
   case 62:
-#line 434 "c.y"
+#line 455 "c.y"
                               {
                     (yyval.astNode) = init_Ast((yyvsp[0].nodeVal)->nodeType, (yyvsp[0].nodeVal)->dataType, (yyvsp[0].nodeVal)->value);
                  }
-#line 2097 "c.tab.c"
+#line 2118 "c.tab.c"
     break;
 
   case 63:
-#line 438 "c.y"
+#line 459 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("+", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2105 "c.tab.c"
+#line 2126 "c.tab.c"
     break;
 
   case 64:
-#line 442 "c.y"
+#line 463 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("-", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2113 "c.tab.c"
+#line 2134 "c.tab.c"
     break;
 
   case 65:
-#line 446 "c.y"
+#line 467 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("*", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2121 "c.tab.c"
+#line 2142 "c.tab.c"
     break;
 
   case 66:
-#line 450 "c.y"
+#line 471 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("/", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2129 "c.tab.c"
+#line 2150 "c.tab.c"
     break;
 
   case 67:
-#line 454 "c.y"
+#line 475 "c.y"
                                                       {
                     (yyval.astNode) = build_Ast("==", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2137 "c.tab.c"
+#line 2158 "c.tab.c"
     break;
 
   case 68:
-#line 458 "c.y"
+#line 479 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("<>", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2145 "c.tab.c"
+#line 2166 "c.tab.c"
     break;
 
   case 69:
-#line 462 "c.y"
+#line 483 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("<=", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2153 "c.tab.c"
+#line 2174 "c.tab.c"
     break;
 
   case 70:
-#line 466 "c.y"
+#line 487 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast(">=", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2161 "c.tab.c"
+#line 2182 "c.tab.c"
     break;
 
   case 71:
-#line 470 "c.y"
+#line 491 "c.y"
                                                       {
                     (yyval.astNode) = build_Ast("||", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2169 "c.tab.c"
+#line 2190 "c.tab.c"
     break;
 
   case 72:
-#line 474 "c.y"
+#line 495 "c.y"
                                                        {
                     (yyval.astNode) = build_Ast("&&", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2177 "c.tab.c"
+#line 2198 "c.tab.c"
     break;
 
   case 73:
-#line 478 "c.y"
+#line 499 "c.y"
                                                       {
                     (yyval.astNode) = build_Ast("<", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2185 "c.tab.c"
+#line 2206 "c.tab.c"
     break;
 
   case 74:
-#line 482 "c.y"
+#line 503 "c.y"
                                                       {
                     (yyval.astNode) = build_Ast(">", (yyvsp[-2].astNode), (yyvsp[0].astNode), 0);
                  }
-#line 2193 "c.tab.c"
+#line 2214 "c.tab.c"
     break;
 
   case 75:
-#line 485 "c.y"
+#line 506 "c.y"
                                             {
                     (yyval.astNode) = (yyvsp[-1].astNode);
                  }
-#line 2201 "c.tab.c"
+#line 2222 "c.tab.c"
     break;
 
   case 76:
-#line 491 "c.y"
+#line 512 "c.y"
                {
                   int parameter = 1;
-                  int ret = check_var_parameter(&allFunctions, (yyvsp[-2].strval), currentScope);
+                  int ret;
+                  if(!isClass) {
+                     ret = check_var_parameter(&allFunctions, (yyvsp[-2].strval), currentScope);
+                  } 
+                  else {
+                     ret = check_var_parameter(&classFunctions, (yyvsp[-2].strval), currentScope);
+                  }
                   if(ret) {
                     parameter = 0;
-                    ret = check_var_defined(&allVariables, (yyvsp[-2].strval), currentScope, yylineno);
+                    if(!isClass) {
+                        ret = check_var_defined(&allVariables, (yyvsp[-2].strval), currentScope, yylineno);
+                    }
+                    else {
+                        ret = check_var_defined(&classVariables, (yyvsp[-2].strval), currentScope, yylineno);
+                    }
                   }
                   if(!ret) {
-                    do_var_assign((yyvsp[-2].strval), currentScope, (yyvsp[0].astNode), yylineno, parameter);
+                     do_var_assign((yyvsp[-2].strval), currentScope, (yyvsp[0].astNode), yylineno, parameter);
                   }
                }
-#line 2217 "c.tab.c"
+#line 2249 "c.tab.c"
     break;
 
   case 77:
-#line 505 "c.y"
+#line 537 "c.y"
                  {
                     int ret = check_class_var(&allVariables, (yyvsp[-2].strval), (yyvsp[-4].strval), yylineno);
                     if(!ret) {
                       do_classVar_assign((yyvsp[-2].strval), (yyvsp[-4].strval), currentScope, (yyvsp[0].astNode), yylineno);
                     }
                  }
-#line 2228 "c.tab.c"
+#line 2260 "c.tab.c"
     break;
 
   case 78:
-#line 514 "c.y"
+#line 546 "c.y"
                  {
                     int ret = check_array_defined(&allVariables, (yyvsp[-5].strval), currentScope, (yyvsp[-3].intval), yylineno);
                     if(!ret) {
                      do_arrayElem_assign((yyvsp[-5].strval), (yyvsp[-3].intval), currentScope, (yyvsp[0].astNode), yylineno);
                     }
                  }
-#line 2239 "c.tab.c"
+#line 2271 "c.tab.c"
     break;
 
   case 79:
-#line 522 "c.y"
+#line 554 "c.y"
                         {
    if(!checkClass((yyvsp[-1].strval))) {
       printf("The class %s used to initialize object %s on line %d has not been defined\n", (yyvsp[-1].strval), (yyvsp[0].strval), yylineno);
@@ -2250,23 +2282,23 @@ yyreduce:
       remove_from_scope();
    }
 }
-#line 2254 "c.tab.c"
+#line 2286 "c.tab.c"
     break;
 
   case 80:
-#line 533 "c.y"
+#line 565 "c.y"
               {add_scope("~", 0);}
-#line 2260 "c.tab.c"
+#line 2292 "c.tab.c"
     break;
 
   case 81:
-#line 533 "c.y"
+#line 565 "c.y"
                                                    {remove_from_scope();}
-#line 2266 "c.tab.c"
+#line 2298 "c.tab.c"
     break;
 
   case 95:
-#line 551 "c.y"
+#line 583 "c.y"
                                   {
                   if(myStack[stackCount] >= MAX_ARGS_NR) {
                      printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
@@ -2278,11 +2310,11 @@ yyreduce:
                      funcArgTypes[myStack[stackCount]++] = type;
                   }
                }
-#line 2282 "c.tab.c"
+#line 2314 "c.tab.c"
     break;
 
   case 96:
-#line 562 "c.y"
+#line 594 "c.y"
                                   {
                   if(myStack[stackCount] >= MAX_ARGS_NR) {
                      printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
@@ -2295,22 +2327,21 @@ yyreduce:
                      funcArgTypes[myStack[stackCount]++] = type;
                   }
                }
-#line 2299 "c.tab.c"
+#line 2331 "c.tab.c"
     break;
 
   case 99:
-#line 576 "c.y"
+#line 608 "c.y"
                    {
                   stackCount++;
-
                   // myStack[stackCount] = 0;
                   myStack[stackCount] = 0;
               }
-#line 2310 "c.tab.c"
+#line 2341 "c.tab.c"
     break;
 
   case 100:
-#line 583 "c.y"
+#line 614 "c.y"
               {
                   (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                   if(!inObj) {
@@ -2335,31 +2366,31 @@ yyreduce:
                   }
                   stackCount--;
               }
-#line 2339 "c.tab.c"
+#line 2370 "c.tab.c"
     break;
 
   case 101:
-#line 609 "c.y"
+#line 640 "c.y"
                              {
                      inObj = 1;
                      strncpy(objName, (yyvsp[-1].strval), MAX_VAR_LEN); 
                   }
-#line 2348 "c.tab.c"
+#line 2379 "c.tab.c"
     break;
 
   case 102:
-#line 614 "c.y"
+#line 645 "c.y"
                   {
                      (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                      (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
                      strncpy((yyval.nodeVal)->value, "method", MAX_VAR_LEN);
                      inObj = 0;
                   }
-#line 2359 "c.tab.c"
+#line 2390 "c.tab.c"
     break;
 
   case 103:
-#line 621 "c.y"
+#line 652 "c.y"
                                               {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
@@ -2370,11 +2401,11 @@ yyreduce:
       final_result = concatenate_and_free(final_result, p);
    }
 }
-#line 2374 "c.tab.c"
+#line 2405 "c.tab.c"
     break;
 
   case 104:
-#line 632 "c.y"
+#line 663 "c.y"
                                           {
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
    if(type != -1) {
@@ -2385,87 +2416,87 @@ yyreduce:
       final_result = concatenate_and_free(final_result, p);
    }
 }
-#line 2389 "c.tab.c"
+#line 2420 "c.tab.c"
     break;
 
   case 107:
-#line 648 "c.y"
+#line 679 "c.y"
          {
             forCounter++; 
             char newScope[MAX_VAR_LEN];
             snprintf(newScope, MAX_VAR_LEN, "for_%d", forCounter);
             add_scope(newScope, 0);
          }
-#line 2400 "c.tab.c"
+#line 2431 "c.tab.c"
     break;
 
   case 108:
-#line 655 "c.y"
+#line 686 "c.y"
          {
             remove_from_scope();
          }
-#line 2408 "c.tab.c"
+#line 2439 "c.tab.c"
     break;
 
   case 117:
-#line 675 "c.y"
+#line 706 "c.y"
             {
               whileCounter++; 
               char newScope[MAX_VAR_LEN];
               snprintf(newScope, MAX_VAR_LEN, "while_%d", whileCounter);
               add_scope(newScope, 0);
             }
-#line 2419 "c.tab.c"
+#line 2450 "c.tab.c"
     break;
 
   case 118:
-#line 682 "c.y"
+#line 713 "c.y"
             {
               remove_from_scope();
             }
-#line 2427 "c.tab.c"
+#line 2458 "c.tab.c"
     break;
 
   case 119:
-#line 688 "c.y"
+#line 719 "c.y"
              {
                 ifCounter++; 
                 char newScope[MAX_VAR_LEN];
                 snprintf(newScope, MAX_VAR_LEN, "if_%d", ifCounter);
                 add_scope(newScope, 0);
              }
-#line 2438 "c.tab.c"
+#line 2469 "c.tab.c"
     break;
 
   case 120:
-#line 695 "c.y"
+#line 726 "c.y"
              {
               remove_from_scope();
              }
-#line 2446 "c.tab.c"
+#line 2477 "c.tab.c"
     break;
 
   case 122:
-#line 702 "c.y"
+#line 733 "c.y"
                {
                   elseCounter++; 
                   char newScope[MAX_VAR_LEN];
                   snprintf(newScope, MAX_VAR_LEN, "else_%d", elseCounter);
                   add_scope(newScope, 0);
                }
-#line 2457 "c.tab.c"
+#line 2488 "c.tab.c"
     break;
 
   case 123:
-#line 709 "c.y"
+#line 740 "c.y"
                {
                   remove_from_scope();
                }
-#line 2465 "c.tab.c"
+#line 2496 "c.tab.c"
     break;
 
 
-#line 2469 "c.tab.c"
+#line 2500 "c.tab.c"
 
       default: break;
     }
@@ -2697,7 +2728,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 717 "c.y"
+#line 748 "c.y"
 
 
 void yyerror(char *s)

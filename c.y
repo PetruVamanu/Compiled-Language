@@ -384,18 +384,39 @@ atomic_value : C_INT {
              | ID 
              {
                 int parameter = 1;
-                int ret = check_var_parameter(&allFunctions, $1, currentScope);
+                int ret;
+                if(!isClass) {
+                  ret = check_var_parameter(&allFunctions, $1, currentScope);
+                }
+                else {
+                  ret = check_var_parameter(&classFunctions, $1, currentScope);
+                }
                 if(ret) {
                   parameter = 0;
-                  ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                  if(!isClass) {
+                     ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                  }
+                  else {
+                     ret = check_var_defined(&classVariables, $1, currentScope, yylineno);
+                  }
                 }
                 $$ = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                 $$->nodeType = 1;
                 if(parameter) {
-                  $$->dataType = extract_param_type(&allFunctions, $1, currentScope);
+                  if(!isClass) {
+                     $$->dataType = extract_param_type(&allFunctions, $1, currentScope);
+                  }
+                  else {
+                     $$->dataType = extract_param_type(&classFunctions, $1, currentScope);
+                  }
                 }
                 else {
-                  $$->dataType = extract_variable_type(&allVariables, $1, currentScope);
+                  if(!isClass) {
+                     $$->dataType = extract_variable_type(&allVariables, $1, currentScope);
+                  }
+                  else {
+                     $$->dataType = extract_variable_type(&classVariables, $1, currentScope);                     
+                  }
                 }
                 snprintf($$->value, MAX_VAR_LEN, "%s", $1);
              }
@@ -490,13 +511,24 @@ expression_value :
 var_assignment : ID '=' expression_value 
                {
                   int parameter = 1;
-                  int ret = check_var_parameter(&allFunctions, $1, currentScope);
+                  int ret;
+                  if(!isClass) {
+                     ret = check_var_parameter(&allFunctions, $1, currentScope);
+                  } 
+                  else {
+                     ret = check_var_parameter(&classFunctions, $1, currentScope);
+                  }
                   if(ret) {
                     parameter = 0;
-                    ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                    if(!isClass) {
+                        ret = check_var_defined(&allVariables, $1, currentScope, yylineno);
+                    }
+                    else {
+                        ret = check_var_defined(&classVariables, $1, currentScope, yylineno);
+                    }
                   }
                   if(!ret) {
-                    do_var_assign($1, currentScope, $3, yylineno, parameter);
+                     do_var_assign($1, currentScope, $3, yylineno, parameter);
                   }
                }
                ;
@@ -575,7 +607,6 @@ func_arguments : expression_value {
  
 function_call : ID {
                   stackCount++;
-
                   // myStack[stackCount] = 0;
                   myStack[stackCount] = 0;
               }

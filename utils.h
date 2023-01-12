@@ -791,13 +791,27 @@ void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, sh
     int varType;
 
     if(paramFlag) {
-        varType = extract_param_type(&allFunctions, varName, scope);
+        if(!isClass) {
+            varType = extract_param_type(&allFunctions, varName, scope);
+        }
+        else {
+            varType = extract_param_type(&classFunctions, varName, scope);
+        }
     }
     else { 
-        varType = extract_variable_type(&allVariables, varName, scope);
+        if(!isClass) {
+            varType = extract_variable_type(&allVariables, varName, scope);   
+        }
+        else {
+            varType = extract_variable_type(&classVariables, varName, scope);   
+        }
     }
-
-    check_and_update_variable(&allVariables, varName, varType, scope, Ast, line);
+    if(!isClass) {
+        check_and_update_variable(&allVariables, varName, varType, scope, Ast, line);   
+    }
+    else {
+        check_and_update_variable(&classVariables, varName, varType, scope, Ast, line);
+    }
 }
 
 void do_declVar_assign(VariableList *varTable, char *varName, char *scope, struct AstNode *Ast, int line, short dataType)
