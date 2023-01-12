@@ -562,25 +562,14 @@ static const yytype_int16 yyrline[] =
      100,   138,   141,   141,   144,   147,   156,   175,   178,   184,
      184,   200,   201,   202,   206,   205,   212,   211,   221,   222,
      225,   239,   239,   257,   279,   279,   298,   299,   302,   317,
-<<<<<<< HEAD
      316,   343,   349,   356,   363,   370,   377,   384,   423,   430,
      436,   444,   455,   459,   463,   467,   471,   475,   479,   483,
      487,   491,   495,   499,   503,   506,   511,   536,   545,   554,
      565,   565,   568,   569,   570,   571,   572,   573,   574,   575,
-     576,   577,   578,   579,   580,   583,   594,   594,   607,   607,
-     639,   639,   651,   662,   673,   674,   678,   677,   690,   691,
-     692,   693,   696,   697,   700,   701,   705,   704,   718,   725,
-     717,   732,   731,   742,   745
-=======
-     316,   343,   349,   356,   363,   370,   377,   384,   402,   409,
-     415,   423,   434,   438,   442,   446,   450,   454,   458,   462,
-     466,   470,   474,   478,   482,   485,   490,   504,   513,   522,
-     533,   533,   536,   537,   538,   539,   540,   541,   542,   543,
-     544,   545,   546,   547,   548,   551,   562,   562,   574,   576,
-     576,   609,   609,   621,   632,   643,   644,   648,   647,   660,
-     661,   662,   663,   666,   667,   670,   671,   675,   674,   688,
-     695,   687,   702,   701,   712,   715
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+     576,   577,   578,   579,   580,   583,   594,   594,   606,   608,
+     608,   640,   640,   652,   663,   674,   675,   679,   678,   691,
+     692,   693,   694,   697,   698,   701,   702,   706,   705,   719,
+     726,   718,   733,   732,   743,   746
 };
 #endif
 
@@ -2341,13 +2330,8 @@ yyreduce:
 #line 2331 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 98:
-#line 607 "c.y"
-=======
   case 99:
-#line 576 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 608 "c.y"
                    {
                   stackCount++;
                   // myStack[stackCount] = 0;
@@ -2356,13 +2340,8 @@ yyreduce:
 #line 2341 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 99:
-#line 613 "c.y"
-=======
   case 100:
-#line 583 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 614 "c.y"
               {
                   (yyval.nodeVal) = (struct NodeInfo *) malloc(sizeof(struct NodeInfo));
                   if(!inObj) {
@@ -2390,13 +2369,8 @@ yyreduce:
 #line 2370 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 100:
-#line 639 "c.y"
-=======
   case 101:
-#line 609 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 640 "c.y"
                              {
                      inObj = 1;
                      strncpy(objName, (yyvsp[-1].strval), MAX_VAR_LEN); 
@@ -2404,13 +2378,8 @@ yyreduce:
 #line 2379 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 101:
-#line 644 "c.y"
-=======
   case 102:
-#line 614 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 645 "c.y"
                   {
                      (yyval.nodeVal)->nodeType = (yyvsp[0].nodeVal)->nodeType;
                      (yyval.nodeVal)->dataType = (yyvsp[0].nodeVal)->dataType;
@@ -2420,13 +2389,8 @@ yyreduce:
 #line 2390 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 102:
-#line 651 "c.y"
-=======
   case 103:
-#line 621 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 652 "c.y"
                                               {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
@@ -2440,13 +2404,8 @@ yyreduce:
 #line 2405 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 103:
-#line 662 "c.y"
-=======
   case 104:
-#line 632 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 663 "c.y"
                                           {
    int type = check_AstTypes((yyvsp[-1].astNode), yylineno);
    if(type != -1) {
@@ -2460,13 +2419,8 @@ yyreduce:
 #line 2420 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 106:
-#line 678 "c.y"
-=======
   case 107:
-#line 648 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 679 "c.y"
          {
             forCounter++; 
             char newScope[MAX_VAR_LEN];
@@ -2476,26 +2430,16 @@ yyreduce:
 #line 2431 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 107:
-#line 685 "c.y"
-=======
   case 108:
-#line 655 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 686 "c.y"
          {
             remove_from_scope();
          }
 #line 2439 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 116:
-#line 705 "c.y"
-=======
   case 117:
-#line 675 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 706 "c.y"
             {
               whileCounter++; 
               char newScope[MAX_VAR_LEN];
@@ -2505,26 +2449,16 @@ yyreduce:
 #line 2450 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 117:
-#line 712 "c.y"
-=======
   case 118:
-#line 682 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 713 "c.y"
             {
               remove_from_scope();
             }
 #line 2458 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 118:
-#line 718 "c.y"
-=======
   case 119:
-#line 688 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 719 "c.y"
              {
                 ifCounter++; 
                 char newScope[MAX_VAR_LEN];
@@ -2534,26 +2468,16 @@ yyreduce:
 #line 2469 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 119:
-#line 725 "c.y"
-=======
   case 120:
-#line 695 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 726 "c.y"
              {
               remove_from_scope();
              }
 #line 2477 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 121:
-#line 732 "c.y"
-=======
   case 122:
-#line 702 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 733 "c.y"
                {
                   elseCounter++; 
                   char newScope[MAX_VAR_LEN];
@@ -2563,13 +2487,8 @@ yyreduce:
 #line 2488 "c.tab.c"
     break;
 
-<<<<<<< HEAD
-  case 122:
-#line 739 "c.y"
-=======
   case 123:
-#line 709 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 740 "c.y"
                {
                   remove_from_scope();
                }
@@ -2809,11 +2728,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-<<<<<<< HEAD
-#line 747 "c.y"
-=======
-#line 717 "c.y"
->>>>>>> 23e58b1473cf5b1ed094a4747b117d80bc770f76
+#line 748 "c.y"
 
 
 void yyerror(char *s)
