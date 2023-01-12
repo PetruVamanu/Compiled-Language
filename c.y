@@ -43,11 +43,9 @@
 s : declaratii main { 
    if(!error_code)
    {
-      printf("cod sintactic corect! ;) \n");  
-      if(final_result){
-         printf("\033[32m%s\033[0m\n", final_result); 
-         free(final_result);
-      }
+      create_symbol_table();
+      create_function_table();
+      printf("cod sintactic corect! ;) \n");  if(final_result){printf("\033[32m%s\033[0m\n", final_result); free(final_result);}
    }
 }
   ;
@@ -158,7 +156,8 @@ param : type ID {
       | ARRAY type '[' C_INT ']' ID {
         currentVariable.typeInfo.isArray = 1;
         if($4 > MAX_ARRAY_LEN) {
-          printf("Array elements limit exceeded on line %d\n", yylineno);
+          printf("\033[31mArray elements limit exceeded on line %d\n\033[0m", yylineno);
+          error_code = 1;
         }
         
         currentVariable.typeInfo.arrayLen = min($4, MAX_ARRAY_LEN);
@@ -257,13 +256,15 @@ array_var : ID {
 
 array_content : atomic_value {
                 if(arrayInitPos >= currentVariable.typeInfo.arrayLen) {
-                  printf("Array length excedeed when initializing on line %d. Array Length is %d, while initialization list length is %d.\n", 
+                  printf("\033[31mArray length excedeed when initializing on line %d. Array Length is %d, while initialization list length is %d.\n\033[0m", 
                   yylineno, currentVariable.typeInfo.arrayLen, arrayInitPos + 1);
+                  error_code = 1;
                 }
                 else {
 
                   if($1->dataType != currentVariable.typeInfo.typeName){
-                     printf("Array initialized with different type on line %d.\n", yylineno);
+                     printf("\033[31mArray initialized with different type on line %d.\n\033[0m", yylineno);
+                     error_code = 1;
                   }
 
                   if($1->nodeType == 2 && $1->dataType == 0) {
@@ -279,7 +280,7 @@ array_content : atomic_value {
                 if(arrayInitPos < currentVariable.typeInfo.arrayLen) {
                   
                   if($1->dataType != currentVariable.typeInfo.typeName){
-                     printf("Array initialized with different type on line %d.\n", yylineno);
+                     printf("\033[31mArray initialized with different type on line %d.\n\033[0m", yylineno);
                      error_code = 1;
                   }
 
@@ -548,28 +549,34 @@ scope_body : var_decl scope_body
            ;
 
 func_arguments : expression_value {
-                  if(nrArgs >= MAX_ARGS_NR) {
-                     printf("Maximum number of arguments for a function had been reached on line %d\n", yylineno);
+                  if(myStack[stackCount] >= MAX_ARGS_NR) {
+                     printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
+                     error_code = 1;
                   }
                   else {
                      int type = check_AstTypes($1, yylineno);
                      // insert into the list of arguments of types for this function :))
-                     funcArgTypes[nrArgs++] = type;
+                     funcArgTypes[myStack[stackCount]++] = type;
                   }
                }
                | expression_value {
-                  if(nrArgs >= MAX_ARGS_NR) {
-                     printf("Maximum number of arguments for a function had been reached on line %d\n", yylineno);
+                  if(myStack[stackCount] >= MAX_ARGS_NR) {
+                     printf("\033[31mMaximum number of arguments for a function had been reached on line %d\n\033[0m", yylineno);
+                  
+                     error_code = 1;
                   } 
                   else {
                      int type = check_AstTypes($1, yylineno);
                      // insert into the list of arguments of types for this function :))
-                     funcArgTypes[nrArgs++] = type;
+                     funcArgTypes[myStack[stackCount]++] = type;
                   }
                } ',' func_arguments
  
 function_call : ID {
-                  nrArgs = 0;
+                  stackCount++;
+
+                  // myStack[stackCount] = 0;
+                  myStack[stackCount] = 0;
               }
               '(' func_arguments ')' 
               {
@@ -578,7 +585,7 @@ function_call : ID {
                      // it's a simple function call
                      int retValue = check_func_defined(&allFunctions, $1, yylineno);
                      if(!retValue){
-                        check_func_arguments(&allFunctions, $1, funcArgTypes, nrArgs, yylineno);
+                        check_func_arguments(&allFunctions, $1, funcArgTypes, myStack[stackCount], yylineno);
                      }
                      $$->nodeType = 3;
                      $$->dataType = extract_func_return(&allFunctions, $1);
@@ -588,12 +595,13 @@ function_call : ID {
                      // It's a method from a class. The name of the class is stored in objName
                      int retValue = check_method_defined(&allFunctions, $1, objName,  yylineno);
                      if(!retValue) {
-                        check_method_arguments(&allFunctions, $1, objName, funcArgTypes, nrArgs, yylineno);
+                        check_method_arguments(&allFunctions, $1, objName, funcArgTypes, myStack[stackCount], yylineno);
                      }
                      $$->nodeType = 3;
                      $$->dataType = extract_method_return(&allFunctions, $1, objName);
                      snprintf($$->value, MAX_VAR_LEN, "method");
                   }
+                  stackCount--;
               }
               ;
 
@@ -613,7 +621,7 @@ typeof_call : TYPEOF '(' expression_value ')' {
    // Third parameter is expression value, $3 -> AST coresponding to that expression
    int type = check_AstTypes($3, yylineno);
    if(type != -1) {
-      printf("~The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
+      // printf("~The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
       char *p = (char*)malloc(1000* sizeof(char));
       sprintf(p, "The expression from the 'TypeOf()' call on line %d has the type %s\n", yylineno, decodeType[type]);
       final_result = concatenate_and_free(final_result, p);
@@ -624,7 +632,7 @@ eval_call : EVAL '(' expression_value ')' {
    int type = check_AstTypes($3, yylineno);
    if(type != -1) {
       int result = computeAst($3, currentScope, yylineno);
-      printf("~The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
+      // printf("~The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
       char *p = (char*)malloc(1000* sizeof(char));
       sprintf(p, "The expression from the 'Eval()' call on line %d has the value %d\n", yylineno, result);
       final_result = concatenate_and_free(final_result, p);
@@ -726,8 +734,6 @@ int main(int argc, char** argv)
 
   yyparse();
 
-  create_symbol_table();
-  create_function_table();
 
   clear_varList(&allVariables);
   clear_varList(&classVariables);

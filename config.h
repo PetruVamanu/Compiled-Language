@@ -35,6 +35,8 @@ short nodeType, dataType, isFunction;
 char currentValue[MAX_VAR_LEN], currentOperation[MAX_VAR_LEN];
 int forCounter = 0, whileCounter = 0, ifCounter = 0, elseCounter = 0;
 
+int stackCount = 0;
+int myStack[MAX_ARGS_NR];
 
 typedef struct {
     short typeName;
