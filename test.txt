@@ -1,12 +1,11 @@
 class PetriAlex {
-    int a;
-    function int f(int a) {
+    string var1, var2;
+    function int f(int b) {
+        int zz, yy;
         return 2;
     }
 }
 begin
-    PetriAlex.a = 2;
-    int c = PetriAlex.a + 4;
-    Eval(c);
-    int c = PetriAlex->f(2, 4);
+    &PetriAlex ob2;
+    int a = ob2->f('2', "sasaas");
 end

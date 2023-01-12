@@ -897,7 +897,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 27 "c.l"
+#line 28 "c.l"
 {
     yylval.strval = strdup(yytext); 
     return EQ;
@@ -905,14 +905,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 31 "c.l"
+#line 32 "c.l"
 {
     return MCALL;
 }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 34 "c.l"
+#line 35 "c.l"
 {
     yylval.strval = strdup(yytext);
     return NEQ;
@@ -920,7 +920,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 38 "c.l"
+#line 39 "c.l"
 {
     yylval.strval = strdup(yytext);
     return LEQ;
@@ -928,7 +928,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 42 "c.l"
+#line 43 "c.l"
 {
     yylval.strval = strdup(yytext);
     return LT;
@@ -936,7 +936,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 46 "c.l"
+#line 47 "c.l"
 {
     yylval.strval = strdup(yytext);
     return GT;
@@ -944,7 +944,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 51 "c.l"
+#line 52 "c.l"
 {
     yylval.strval = strdup(yytext);
     return GEQ;
@@ -952,7 +952,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 55 "c.l"
+#line 56 "c.l"
 {
     yylval.strval = strdup(yytext);
     return OR;
@@ -960,7 +960,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 59 "c.l"
+#line 60 "c.l"
 {
     yylval.strval = strdup(yytext);
     return AND;
@@ -968,17 +968,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 63 "c.l"
+#line 64 "c.l"
 {return EVAL;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 64 "c.l"
+#line 65 "c.l"
 {return TYPEOF;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 66 "c.l"
+#line 67 "c.l"
 {
     yylval.strval = strdup(yytext); 
     return ID;
@@ -986,7 +986,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 71 "c.l"
+#line 72 "c.l"
 {
     yylval.intval = atoi(yytext); 
     return C_INT; 
@@ -994,12 +994,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 76 "c.l"
+#line 77 "c.l"
 {return C_FLOAT;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 77 "c.l"
+#line 78 "c.l"
 {
     yylval.strval = strdup(yytext); 
     return C_STRING;
@@ -1007,7 +1007,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 81 "c.l"
+#line 82 "c.l"
 {
     yylval.strval = strdup(yytext); 
     return C_CHAR;
@@ -1015,28 +1015,28 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 85 "c.l"
+#line 86 "c.l"
 ;
 	YY_BREAK
 case 37:
 /* rule 37 can match eol */
 YY_RULE_SETUP
-#line 86 "c.l"
+#line 87 "c.l"
 {yylineno++;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 87 "c.l"
+#line 88 "c.l"
 ;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 88 "c.l"
+#line 89 "c.l"
 {return yytext[0];}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 89 "c.l"
+#line 90 "c.l"
 ECHO;
 	YY_BREAK
 #line 1043 "lex.yy.c"
@@ -2044,4 +2044,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 89 "c.l"
+#line 90 "c.l"

@@ -78,7 +78,7 @@ void insert_var(VariableList *varTable, Variable *newVar)
     if(arrayLen >= MAX_ARRAY_LEN) {
         printf("Array length limit is excedeed!");
         return;
-    }s
+    }
 
     for(int i = 0; i < arrayLen; ++i) {
         varTable->variables[varNum].value[i] = newVar->value[i];
@@ -648,25 +648,25 @@ void update_classVar_value(VariableList *varTable, char *varName, char *objName,
 }
 
 
-void update_var(char *name, char *scope, int newVal) 
+void update_var(VariableList *varTable, char *name, char *scope, int newVal) 
 {
     short isArray = (strchr(name, '[') != 0);
     short isObj = (strchr(name, '.') != 0);
     if(!isArray && !isObj) {
-        update_variable_value(&allVariables, name, scope, newVal);
+        update_variable_value(varTable, name, scope, newVal);
     }
     if(isArray) {
         // I know fo sho it's an array
         char arrName[MAX_VAR_LEN];
         int index;
         sscanf(name, "%[^[][%d]", arrName, &index);
-        update_arrayElement_value(&allVariables, arrName, index, scope, newVal);
+        update_arrayElement_value(varTable, arrName, index, scope, newVal);
     }
     if(isObj) {
         // I know fo sho it's an object
         char objName[MAX_VAR_LEN], varName[MAX_VAR_LEN];
         sscanf(name, "%[^'.'].%s", objName, varName);
-        update_classVar_value(&allVariables, varName, objName, scope, newVal);
+        update_classVar_value(varTable, varName, objName, scope, newVal);
     }
 }
 
@@ -753,7 +753,7 @@ int computeAst(struct AstNode *nod, char *scope, int line)
     }
 }
 
-void check_and_update_variable(char *varName, int varType, char *scope, struct AstNode *Ast, int line) 
+void check_and_update_variable(VariableList *varTable, char *varName, int varType, char *scope, struct AstNode *Ast, int line) 
 {
     int expType = check_AstTypes(Ast, line);
 
@@ -768,7 +768,7 @@ void check_and_update_variable(char *varName, int varType, char *scope, struct A
     }
 
     int astResult = computeAst(Ast, scope, line);
-    update_var(varName, scope, astResult);
+    update_var(varTable, varName, scope, astResult);
 }
 
 void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, short paramFlag) 
@@ -782,12 +782,12 @@ void do_var_assign(char *varName, char *scope, struct AstNode* Ast, int line, sh
         varType = extract_variable_type(&allVariables, varName, scope);
     }
 
-    check_and_update_variable(varName, varType, scope, Ast, line);
+    check_and_update_variable(&allVariables, varName, varType, scope, Ast, line);
 }
 
-void do_declVar_assign(char *varName, char *scope, struct AstNode *Ast, int line, short dataType)
+void do_declVar_assign(VariableList *varTable, char *varName, char *scope, struct AstNode *Ast, int line, short dataType)
 {
-    check_and_update_variable(varName, dataType, scope, Ast, line);
+    check_and_update_variable(&allVariables, varName, dataType, scope, Ast, line);
 }
 
 void do_classVar_assign(char *varName, char *obj, char *scope, struct AstNode* Ast, int line) 
@@ -796,7 +796,7 @@ void do_classVar_assign(char *varName, char *obj, char *scope, struct AstNode* A
     snprintf(actualName, MAX_VAR_LEN, "%s.%s", obj, varName);
     int varType = extract_class_varType(&allVariables, varName, obj);
     
-    check_and_update_variable(actualName, varType, scope, Ast, line);
+    check_and_update_variable(&allVariables, actualName, varType, scope, Ast, line);
 }
 
 void do_arrayElem_assign(char *varName, int index, char *scope, struct AstNode* Ast, int line) 
@@ -805,7 +805,7 @@ void do_arrayElem_assign(char *varName, int index, char *scope, struct AstNode* 
     snprintf(actualName, MAX_VAR_LEN, "%s[%d]", varName, index);
     int varType = extract_variable_type(&allVariables, varName, currentScope);
     
-    check_and_update_variable(actualName, varType, scope, Ast, line);
+    check_and_update_variable(&allVariables, actualName, varType, scope, Ast, line);
 }
 
 void match_arguments(char *funcName, int *arg_types, int argNr, VariableList *parameters, int line, short isMethod) 
@@ -886,6 +886,56 @@ void check_method_arguments(FunctionList *funcTable, char *methodName, char *obj
     char fullName[MAX_VAR_LEN];
     snprintf(fullName, MAX_VAR_LEN, "%s->%s", objName, methodName);
     match_arguments(fullName, arg_types, argNr, &funcTable->functions[pos].parameters, line, 1);
+}
+
+void from_class_to_all(char *clsName, char *scope) {
+    char pattern[MAX_SCOPE_LEN];
+    snprintf(pattern, MAX_SCOPE_LEN, "&%s/", clsName);
+
+    // copy every variable from classVariables that contains the scope /clsName/ to AllVariables with scope changed to newScope
+    for(int i = 0; i < classVariables.varNumber; ++i) {
+        if(strstr(classVariables.variables[i].scope, pattern)) {
+            // we found a variable from that class :))
+            char aux[MAX_SCOPE_LEN];
+            
+            char *end = strstr(classVariables.variables[i].scope, pattern);
+            while(*end != '/' && *end != '\0') {
+                end++;
+            }
+            
+            end++;
+            char newScope[MAX_SCOPE_LEN];
+            
+            strncpy(newScope, scope, MAX_SCOPE_LEN);    
+            strcat(newScope, end);
+            
+            strncpy(aux, classVariables.variables[i].scope, MAX_SCOPE_LEN);
+            strncpy(classVariables.variables[i].scope, newScope, MAX_SCOPE_LEN);
+            insert_var(&allVariables, &classVariables.variables[i]);
+            strncpy(classVariables.variables[i].scope, aux, MAX_SCOPE_LEN);
+        }
+    }
+
+    // copy functions from classFunctions with scope changed 
+    for(int i = 0; i < classFunctions.funcNumber; ++i) {
+        if(endWith(classVariables.variables[i].scope, pattern)) {
+            // we found a variable from that class :))
+            char aux[MAX_SCOPE_LEN];
+            strncpy(aux, classFunctions.functions[i].scope, MAX_SCOPE_LEN);
+            strncpy(classFunctions.functions[i].scope, scope, MAX_SCOPE_LEN);
+            insert_func(&allFunctions, &classFunctions.functions[i]);
+            strncpy(classFunctions.functions[i].scope, aux, MAX_SCOPE_LEN);
+        }
+    }
+}
+
+short checkClass(char *clsName) {
+    for(int i = 0; i < classNr; ++i) {
+        if(!strncmp(classList[i], clsName, MAX_VAR_LEN)) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 #endif

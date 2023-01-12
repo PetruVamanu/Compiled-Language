@@ -18,10 +18,15 @@ char currentScope[MAX_SCOPE_LEN];
 int arrayInitPos = 0;
 
 int inObj = 0;
+short isClass;
+
 char objName[MAX_VAR_LEN];
 
 int nrArgs;
 int funcArgTypes[MAX_ARGS_NR];
+
+char classList[MAX_FUNC_NUM][MAX_VAR_LEN];
+int classNr = 0;
 
 short astTypes[MAX_EXP_LEN];
 int astTypesLen = 0;
@@ -105,8 +110,9 @@ struct AstNode {
     struct AstNode* right;
 };
 
-VariableList allVariables;
-FunctionList allFunctions;
+VariableList allVariables, classVariables;
+FunctionList allFunctions, classFunctions;
+
 Variable currentVariable;
 Function currentFunction;
 
