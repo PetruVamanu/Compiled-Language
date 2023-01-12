@@ -1,8 +1,7 @@
 class PetriAlex {
-    string var1, var2;
+    int a, b;
     function int f(int b) {
-        int zz, yy;
-        return 2;
+        a = 2;
     }
 }
 begin
