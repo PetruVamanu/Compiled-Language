@@ -205,12 +205,14 @@ array_var : ID {
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, $1, MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
-              int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+              
+              arrayInitPos = 0;
+          } '=' '{' array_content '}' {
+            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
               if(!returnVal) {
                   insert_var(&allVariables, &currentVariable);
               }
-              arrayInitPos = 0;
-          } '=' '{' array_content '}'
+          }
           ;
 
 array_content : atomic_value {
@@ -219,6 +221,11 @@ array_content : atomic_value {
                   yylineno, currentVariable.typeInfo.arrayLen, arrayInitPos + 1);
                 }
                 else {
+
+                  if($1->dataType != currentVariable.typeInfo.typeName){
+                     printf("Array initialized with different type on line %d.\n", yylineno);
+                  }
+
                   if($1->nodeType == 2 && $1->dataType == 0) {
                     currentVariable.value[arrayInitPos] = atoi($1->value);
                   }
@@ -228,8 +235,13 @@ array_content : atomic_value {
                 }
                 arrayInitPos++; 
               }
-              | atomic_value {
+              | atomic_value {             
                 if(arrayInitPos < currentVariable.typeInfo.arrayLen) {
+                  
+                  if($1->dataType != currentVariable.typeInfo.typeName){
+                     printf("Array initialized with different type on line %d.\n", yylineno);
+                  }
+
                   if($1->nodeType == 2 && $1->dataType == 0) {
                     currentVariable.value[arrayInitPos] = atoi($1->value);
                   }
