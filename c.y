@@ -43,7 +43,6 @@
 s : declaratii main { 
    if(!error_code)
    {
-
       create_symbol_table();
       create_function_table();
       printf("cod sintactic corect! ;) \n");  if(final_result){printf("\033[32m%s\033[0m\n", final_result); free(final_result);}
@@ -112,9 +111,20 @@ func_decl : FUNCTION {
           } 
           '(' param_list ')' 
           {
-            int return_value = check_func_already(&allFunctions, currentFunction.name, &currentFunction.parameters, yylineno);
+            int return_value;
+            if(!isClass) {
+               return_value = check_func_already(&allFunctions, currentFunction.name, &currentFunction.parameters, yylineno);
+            }
+            else {
+               return_value = check_func_already(&classFunctions, currentFunction.name, &currentFunction.parameters, yylineno);
+            }
             if(!return_value) {
-               insert_func(&allFunctions, &currentFunction);
+               if(!isClass) {
+                  insert_func(&allFunctions, &currentFunction);
+               }
+               else {
+                  insert_func(&classFunctions, &currentFunction);
+               }
             }
             clear_varList(&currentFunction.parameters);
           }
@@ -171,7 +181,21 @@ is_const : CONST {
          ;
 
 
-class_decl : CLASS ID {add_scope($2, 1);} '{' class_content '}' {remove_from_scope();}
+class_decl : CLASS ID {
+               isClass = 1; 
+               add_scope($2, 1);
+               if(classNr >= MAX_FUNC_NUM) {
+                  printf("The maximum number of classes has been reached\n");
+               }
+               else {
+                  strncpy(classList[classNr++], $2, MAX_VAR_NUM);
+               }
+            } 
+            '{' class_content '}' 
+            {
+               isClass = 0;
+               remove_from_scope();
+            }
            ;
 class_content : var_decl class_content
               | func_decl  class_content
@@ -204,19 +228,28 @@ array_var : ID {
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
               int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
               if(!returnVal) {
-                  insert_var(&allVariables, &currentVariable);
+                  if(!isClass) {
+                     insert_var(&allVariables, &currentVariable);
+                  }
+                  else {
+                     insert_var(&classVariables, &currentVariable);
+                  }
               }
           }
           | ID {
               currentVariable.line = yylineno;
               strncpy(currentVariable.name, $1, MAX_VAR_LEN);
               strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
-              
               arrayInitPos = 0;
           } '=' '{' array_content '}' {
-            int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
-              if(!returnVal) {
-                  insert_var(&allVariables, &currentVariable);
+               int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
+               if(!returnVal) {
+                  if(!isClass) {
+                     insert_var(&allVariables, &currentVariable);
+                  }
+                  else {
+                     insert_var(&classVariables, &currentVariable);
+                  }
               }
           }
           ;
@@ -272,7 +305,12 @@ variable : ID {
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
             int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
             if(!returnVal) {
-               insert_var(&allVariables, &currentVariable);
+               if(!isClass) {
+                  insert_var(&allVariables, &currentVariable);
+               }
+               else {
+                  insert_var(&classVariables, &currentVariable);
+               }
             }
          }
          | ID 
@@ -282,13 +320,23 @@ variable : ID {
             strncpy(currentVariable.scope, currentScope, MAX_SCOPE_LEN);
             int returnVal = check_variable_already(&allVariables, currentVariable.name, currentScope, yylineno);
             if(!returnVal) {
-               insert_var(&allVariables, &currentVariable);
+               if(!isClass) {
+                   insert_var(&allVariables, &currentVariable);
+               }
+               else {
+                  insert_var(&classVariables, &currentVariable);
+               }
             }
           } 
           '=' expression_value 
           {
             // the case where the variable is initialized + assigned to an expression:))
-            do_declVar_assign($1, currentScope, $4, yylineno, currentVariable.typeInfo.typeName);
+            if(!isClass) {
+               do_declVar_assign(&allVariables, $1, currentScope, $4, yylineno, currentVariable.typeInfo.typeName);
+            }
+            else {
+               do_declVar_assign(&classVariables, $1, currentScope, $4, yylineno, currentVariable.typeInfo.typeName);
+            }
           }
          ;
 
@@ -471,6 +519,17 @@ array_assignment : ID '[' C_INT ']' '=' expression_value
                  }
                  ;
 
+object_init : '&' ID ID {
+   if(!checkClass($2)) {
+      printf("The class %s used to initialize object %s on line %d has not been defined\n", $2, $3, yylineno);
+   }
+   else {
+      add_scope($3, 1);
+      from_class_to_all($2, currentScope);
+      remove_from_scope();
+   }
+}  
+
 main : BEGINP {add_scope("~", 0);} scope_body ENDP {remove_from_scope();}
      ;
 
@@ -480,6 +539,7 @@ scope_body : var_decl scope_body
            | typeof_call ';' scope_body
            | eval_call ';' scope_body 
            | var_assignment ';' scope_body
+           | object_init ';' scope_body
            | class_assignment ';' scope_body
            | array_assignment ';' scope_body
            | return_statement ';'
@@ -665,8 +725,9 @@ int main(int argc, char** argv)
   yyin = fopen(argv[1], "r");
 
   init_varList(&allVariables);
+  init_varList(&classVariables);
   init_funcList(&allFunctions);
-  
+  init_funcList(&classFunctions);
   // information about every assignation (varName, scope and AstTree coresponding to some Id)
 
   strncpy(currentScope, "/", MAX_SCOPE_LEN);
@@ -675,5 +736,7 @@ int main(int argc, char** argv)
 
 
   clear_varList(&allVariables);
+  clear_varList(&classVariables);
   clear_funcList(&allFunctions);
+  clear_funcList(&classFunctions);
 } 

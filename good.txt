@@ -30,8 +30,8 @@ function int test(int param1, int param2, real f) {
 class C1 {
     int x, q;
     real avg;
-    function void do(){
-        x = x - q;
+    function void do(int x, int qs){
+        x = x - qs;
     }
 }
 
