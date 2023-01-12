@@ -45,8 +45,17 @@ class C2 {
     string prenume = "Andrei";
 }
 
+class C3 {
+    function int method(int x, int y) {
+        return 2;
+    }
+    function string method2(real a) {
+        return 3;
+    }
+}
 
 begin
+
     x = 7;
     x1 = x1 * 2;
     f = 30.0 ; 
@@ -77,7 +86,18 @@ begin
        Eval(x1 * x2 / x1);
     }
 
-    array int[20] xArr= {9,8,2,3,4};
+    &C1 obj1;
+    &C1 obj2;
+
+    obj1.x = x2;
+    obj2.x = y;
+    
+    Eval(obj1.x + obj2.x);
+
+    &C3 obj3;
+    &C3 obj4;
+
+    array int[20] xArr = {9,8,2,3,4};
     Eval(xArr[1]); 
 
     x = test(test(x1,3,f)+2, y+4 , f) + (30 - y * arr[2]) - 10;
@@ -88,6 +108,7 @@ begin
     Eval(x+test(x1, x,f)) ; 	
     TypeOf(x+23);
     TypeOf(f - 30.0);
+
 end
 
 

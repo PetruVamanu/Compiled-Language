@@ -12,6 +12,12 @@ The following variables where declared in the program:
 11. Name: f1, State: Mutable, Structure: Simple, Type: real, Line: 9, Scope: /
 12. Name: titlu, State: Mutable, Structure: Simple, Type: string, Line: 10, Scope: /
 13. Name: Litera, State: Mutable, Structure: Simple, Type: char, Line: 11, Scope: /
-14. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 60, Scope: /~/if_2/
-15. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 61, Scope: /~/if_2/for_1/
-16. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 80, Scope: /~/
+14. Name: xq, State: Mutable, Structure: Simple, Type: int, Line: 69, Scope: /~/if_2/
+15. Name: i, State: Mutable, Structure: Simple, Type: int, Line: 70, Scope: /~/if_2/for_1/
+16. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj1/
+17. Name: q, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj1/
+18. Name: avg, State: Mutable, Structure: Simple, Type: real, Line: 37, Scope: /~/&obj1/
+19. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj2/
+20. Name: q, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj2/
+21. Name: avg, State: Mutable, Structure: Simple, Type: real, Line: 37, Scope: /~/&obj2/
+22. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 100, Scope: /~/

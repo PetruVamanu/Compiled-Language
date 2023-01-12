@@ -10,3 +10,19 @@ The following functions where defined in the program:
     3.2) Name: param2, State: Mutable, Structure: Simple, Type: int
     3.3) Name: f, State: Mutable, Structure: Simple, Type: real
 4) Name: return1, Return Type: int, Scope: /, Line: 30, Parameters: 
+5) Name: do, Return Type: void, Scope: /~/&obj1/, Line: 38, Parameters: 
+    5.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    5.2) Name: qs, State: Mutable, Structure: Simple, Type: int
+6) Name: method, Return Type: int, Scope: /~/&obj1/, Line: 49, Parameters: 
+    6.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    6.2) Name: y, State: Mutable, Structure: Simple, Type: int
+7) Name: method2, Return Type: string, Scope: /~/&obj1/, Line: 52, Parameters: 
+    7.1) Name: a, State: Mutable, Structure: Simple, Type: real
+8) Name: do, Return Type: void, Scope: /~/&obj2/, Line: 38, Parameters: 
+    8.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    8.2) Name: qs, State: Mutable, Structure: Simple, Type: int
+9) Name: method, Return Type: int, Scope: /~/&obj2/, Line: 49, Parameters: 
+    9.1) Name: x, State: Mutable, Structure: Simple, Type: int
+    9.2) Name: y, State: Mutable, Structure: Simple, Type: int
+10) Name: method2, Return Type: string, Scope: /~/&obj2/, Line: 52, Parameters: 
+    10.1) Name: a, State: Mutable, Structure: Simple, Type: real
