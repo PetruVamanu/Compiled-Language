@@ -95,7 +95,6 @@ begin
     Eval(obj1.x + obj2.x);
 
     &C3 obj3;
-    &C3 obj4;
 
     array int[20] xArr = {9,8,2,3,4};
     Eval(xArr[1]); 

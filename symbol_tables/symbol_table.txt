@@ -20,4 +20,4 @@ The following variables where declared in the program:
 19. Name: x, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj2/
 20. Name: q, State: Mutable, Structure: Simple, Type: int, Line: 36, Scope: /~/&obj2/
 21. Name: avg, State: Mutable, Structure: Simple, Type: real, Line: 37, Scope: /~/&obj2/
-22. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 100, Scope: /~/
+22. Name: xArr, State: Mutable, Structure: Array of 20 elements, Type: int, Line: 99, Scope: /~/

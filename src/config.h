@@ -9,8 +9,8 @@
 #define MAX_EXP_LEN 128 
 #define MAX_ARGS_NR 128
 
-const char *symb_table_path = "symbol_table.txt";
-const char *func_table_path = "symbol_table_functions.txt";
+const char *symb_table_path = "symbol_tables/symbol_table.txt";
+const char *func_table_path = "symbol_tables/symbol_table_functions.txt";
 
 char decodeType[6][20] = {"int", "boolean", "real", "char", "string", "void"};
 char currentScope[MAX_SCOPE_LEN];

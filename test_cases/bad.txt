@@ -8,7 +8,8 @@ string s = "ana";
 
 function int testFunction(int x, real z) {
     x = x + 2;
-    return x * x;}
+    return x * x;
+}
 
 function int testFunction(int x, real z) {
     x = x - 2;

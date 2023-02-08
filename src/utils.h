@@ -407,7 +407,7 @@ short check_method_defined(FunctionList *funcTable, char *methodName, char *objN
         }
     }
 
-    printf("\033[31mMethod %s.%s called on line %d is not defined!\n\033[0m", objName, methodName, line);
+    printf("\033[31mMethod %s->%s called on line %d is not defined!\n\033[0m", objName, methodName, line);
     error_code = 1;
     return -1;
 }
