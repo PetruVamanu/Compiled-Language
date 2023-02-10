@@ -5,7 +5,7 @@ All the source code of the project is inside the **src** directory.
 
 To build the project, enter the following command: **make compile**. 
 
-**Yacc** and **Yacc** should be installed in order to successfuly build the project. 
+**Lex** and **Yacc** should be installed in order to successfuly build the project. 
 
 All the CL programs should be written in the **test_cases/test.txt** file.
 
