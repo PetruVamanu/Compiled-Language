@@ -1,4 +1,4 @@
-# LFAC-T
+# Compiled Language (CL)
 Check **About.pdf** for more details regarding CL. 
 
 All the source code of the project is inside the **src** directory.
